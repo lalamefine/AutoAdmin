@@ -1,5 +1,8 @@
 {
     "name": "lalamefine/autoadmin",
+    "type": "symfony-bundle",
+    "keywords": ["symfony", "admin", "crud", "automatic"],
+    "license": "LGPL-3.0-or-later",
     "description": "Generate Admin pages automatically with no need for configuration (all access granted)",
     "autoload": {
         "psr-4": {
@@ -13,11 +16,7 @@
         }
     ],
     "require": {
-        "wikimedia/composer-merge-plugin": "^2.1"
-    },
-    "config": {
-        "allow-plugins": {
-            "wikimedia/composer-merge-plugin": true
-        }
+        "php": ">=8.1",
+        "symfony/framework-bundle": "^6.0 || ^7.0"
     }
 }
