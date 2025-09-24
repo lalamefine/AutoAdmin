@@ -2,7 +2,7 @@
 
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\Persistence\Proxy;
-use Lalamefine\Autoadmin\LalamefineAutoAdminBundle;
+use Lalamefine\Autoadmin\LalamefineAutoadminBundle;
 use Symfony\Component\Routing\RouterInterface;
 use Symfony\Component\VarExporter\LazyObjectInterface;
 use Twig\Environment;
@@ -12,7 +12,7 @@ class EntityPrinter
 {
     private Environment $twig;
 
-    public function __construct(private EntityManagerInterface $em, private LalamefineAutoAdminBundle $bundle, private RouterInterface $router)
+    public function __construct(private EntityManagerInterface $em, private LalamefineAutoadminBundle $bundle, private RouterInterface $router)
     {
         $loader = new FilesystemLoader($bundle->getPath().'/src/templates/');
         $this->twig = new Environment($loader);

@@ -1,7 +1,7 @@
 <?php namespace Lalamefine\Autoadmin\Controller;
 
 use Doctrine\ORM\EntityManagerInterface;
-use Lalamefine\Autoadmin\LalamefineAutoAdminBundle;
+use Lalamefine\Autoadmin\LalamefineAutoadminBundle;
 use Lalamefine\Autoadmin\Service\EntityPrinter;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -12,7 +12,7 @@ use Twig\Loader\FilesystemLoader;
 abstract class AutoAdminAbstractController extends AbstractController
 {
     public function __construct(
-        protected LalamefineAutoAdminBundle $bundle,
+        protected LalamefineAutoadminBundle $bundle,
         protected EntityManagerInterface $em,
         protected EntityPrinter $entityPrinter,
     ) {}

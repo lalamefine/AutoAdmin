@@ -10,13 +10,13 @@ Installation
     ```php
     return [
         ...
-        Lalamefine\Autoadmin\LalamefineAutoAdminBundle::class => ['all' => true], // add this line
+        Lalamefine\Autoadmin\LalamefineAutoadminBundle::class => ['all' => true], // add this line
     ];
     ```
 3. Add the route in `config/routes/autoadmin.yaml`:
     ```yaml
     app_file:
-        resource: '@LalamefineAutoAdminBundle/config/routes.yaml'
+        resource: '@LalamefineAutoadminBundle/config/routes.yaml'
         prefix: autoadmin
     ```
 

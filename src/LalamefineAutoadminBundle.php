@@ -12,7 +12,7 @@ class LalamefineAutoadminBundle extends AbstractBundle
     {
         // Check the availability of the file info extension
         if (!extension_loaded('fileinfo')) {
-            throw new \RuntimeException('The "fileinfo" PHP extension is required to use the LalamefineAutoAdminBundle.');
+            throw new \RuntimeException('The "fileinfo" PHP extension is required to use the LalamefineAutoadminBundle.');
         }
         // load an XML, PHP or YAML file
         $container->import('../config/services.yaml');
