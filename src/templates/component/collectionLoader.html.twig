@@ -1,0 +1,14 @@
+
+
+<div>
+    <span>{{ elementCount }} item{{ elementCount > 1 ? 's' : '' }} </span>
+    <button type="button" class="hover:text-blue-800 hover:border-blue-300 px-1 hover:cursor-pointer border border-transparent bg-blue-100 mb-1 ml-2 px-1 rounded-xl" 
+        hx-post="{{ path(modeEdition ? 'autoadmin_collection_update' : 'autoadmin_collection_view', {'fqcn': fqcn, 'id': sourceId, 'field': field}) }}"
+        hx-target="#content" hx-swap="beforeend" hx-push-url="false"
+        hx-include=".subform-{{ field }}">
+        {{modeEdition ? 'Edit' : 'Show'}}
+    </button>
+    {% if modeEdition %}
+        <div id="collection-edit-{{ field }}" class="flex flex-col"></div>
+    {% endif %}
+</div>

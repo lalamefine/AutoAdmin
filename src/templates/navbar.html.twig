@@ -1,0 +1,21 @@
+<ul>
+{% for item, subitems in items %}
+    {% if subitems is not iterable %}
+        <li>
+            <a class="text-blue-800 hover:underline" 
+                hx-target="#content" 
+                hx-swap="innerHTML"
+                hx-push-url="true"
+                href="{{ path('autoadmin_entity_list', {'fqcn': subitems|url_encode}) }}"
+                hx-get="{{ path('autoadmin_entity_list', {'fqcn': subitems|url_encode}) }}">
+                {{ item }}
+            </a>
+        </li>
+    {% else %}
+        <li>📁 {{ item }}</li>
+        <div class="ml-3 pl-1 border-l-2 border-gray-300">
+            {% include "navbar.html.twig" with {'items': subitems} %}
+        </div>
+    {% endif %}
+{% endfor %}
+</ul>

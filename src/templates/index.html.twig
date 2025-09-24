@@ -1,0 +1,19 @@
+<html>
+    <head>
+        <title>AutoAdmin</title>
+        <link rel="stylesheet" href="{{ asset('styles.css') }}">
+        <script src="{{ asset('htmx.min.js') }}" defer></script>
+    </head>
+    <body class="h-screen overflow-hidden">
+        <div class="flex h-full w-full">
+            <div class="p-5 border-r-2 h-full min-w-fit overflow-y-auto" hx-get="{{ path('autoadmin_navbar') }}" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+                Loading...
+            </div>
+            <div class="p-5 overflow-auto grow" id="content">
+                {% if content is defined %}
+                    {{ content|raw }}
+                {% endif %}
+            </div>  
+        </div>
+    </body>
+</html>

@@ -1,0 +1,1 @@
+tailwindcss -i public/autoadmin.css -o public/styles.css -w --minify

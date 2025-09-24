@@ -1,0 +1,40 @@
+<h1 class="text-xl">
+    <span class="underline">{{ fqcn|replace({
+        'App\\Entity\\':'<span class="text-gray-500">App\\Entity\\</span>', 
+        'App\\':'<span class="text-gray-500">App\\</span>'
+        })|raw }}</span>
+    <span class="text-primary">( {{ id }} )</span>
+    <button 
+        class="hover:text-blue-800 hover:border-blue-300 hover:cursor-pointer border border-transparent bg-blue-100 mb-1 px-1 rounded-xl"
+        hx-get="{{ path('autoadmin_entity_update', {'fqcn': fqcn|url_encode, 'id': id}) }}" 
+        hx-push-url="true"
+        hx-target="#content" hx-swap="innerHTML">Edit</button>
+</h1>
+<div class="entity-display m-4 p-4 border border-gray-300 rounded bg-white">
+    <table class="mb-4 min-w-1/2">
+        <tbody>
+        {% for field, value in entity %}
+            <tr class="hover:bg-gray-100 align-text-top not-first:border-t border-gray-200">
+            {% if value is iterable %}
+                <td class="p-1"><strong>{{ field }}</strong></td>
+                <td class="p-1"></td>
+                <td class="p-1"> {{ value|length }} items </td>
+                <td class="p-1">
+                    <ul>
+                        {% for item in value %}
+                            <li>{{ item|raw }}</li>
+                        {% endfor %}
+                    </ul>
+                </td>
+            {% else %}
+                <td class="p-1"> <strong>{{ field }}{{ field == identifier ? ' (PK)' : '' }} </strong> </td>
+                <td class="p-1"></td>
+                <td class="p-1"></td>
+                <td class="p-1"> {{ value|raw }} </td>
+                
+            {% endif %}
+            </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+</div>

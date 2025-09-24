@@ -1,0 +1,23 @@
+{
+    "name": "lalamefine/autoadmin",
+    "description": "Generate Admin pages automatically with no need for configuration (all access granted)",
+    "autoload": {
+        "psr-4": {
+            "Lalamefine\\Autoadmin\\": "src/"
+        }
+    },
+    "authors": [
+        {
+            "name": "Louis Triboulin",
+            "email": "l.triboulin@gmail.com"
+        }
+    ],
+    "require": {
+        "wikimedia/composer-merge-plugin": "^2.1"
+    },
+    "config": {
+        "allow-plugins": {
+            "wikimedia/composer-merge-plugin": true
+        }
+    }
+}

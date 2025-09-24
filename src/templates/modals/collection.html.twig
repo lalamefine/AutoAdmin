@@ -1,0 +1,39 @@
+{% extends "modals/modal.html.twig" %}
+
+{% block title %}
+<div class="flex flex-row justify-between items-center w-full mb-4">
+    <div>
+        <b>{{ fqcn|replace({'App\\Entity\\':'', 'App\\':''}) }}</b>
+        <small class="text-gray-500">({{ collection|length }} items)</small>
+        <a href="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode}) }}" target="_blank" class="text-blue-600 hover:underline">View all</a>
+    </div>
+</div>
+{% endblock %}
+
+{% block main %}
+    {% if deletable is defined and not deletable %}
+        <p class="text-red-800/80 m-2">Items cannot be removed because the association is not nullable. Open items to delete or retarget.</p>
+    {% endif %}
+    {% if update is defined and update %}
+        <form class="flex flex-row mb-2"
+            hx-post="{{ path('autoadmin_collection_add_element', {'fqcn': owningFqcn|url_encode, 'field': field}) }}"
+            hx-target="#collection-edit-{{ field }}" hx-swap="beforeend"
+            hx-push-url="false" hx-on::after-request="this.reset()"
+            >
+            <input type="text" name="item_id" class="text-sm border border-gray-300 rounded-l-xl p-1 mr-0" placeholder="Primary Key" />
+            <button class="bg-blue-500 border-2 border-blue-500 hover:bg-blue-700 text-sm text-white font-bold py-1 px-4 ml-0 rounded-r-xl" type="submit">
+                Add item
+            </button>
+        </form>
+    {% endif %}
+    <div class="grid grid-cols-2 gap-2">
+    {% for item in collection %}
+        {% if (update is defined and update) and (not deletable is defined or deletable) %}
+            {% include 'component/entityRemovableReference.html.twig' with {
+                'owningId': originId, 'fqcn': fqcn, 'owningFqcn': owningFqcn, 'id': item.id, 'label': item.name, 'field': field } %}
+        {% else %}
+            {% include 'component/entityReference.html.twig' with {'id': item.id, 'fqcn': fqcn, 'label': item.name} %}
+        {% endif %}
+    {% endfor %}
+    </div>
+{% endblock %}

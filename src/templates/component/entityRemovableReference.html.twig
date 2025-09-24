@@ -1,0 +1,16 @@
+<div class="flex mb-1">
+    <button class="hover:text-blue-800 hover:border-blue-400 hover:bg-blue-100 hover:cursor-pointer border border-blue-100 px-1 rounded-l-xl mr-0"
+        hx-get="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': id}) }}"
+        hx-push-url="true"
+        hx-target="#content" hx-swap="innerHTML">{{ label|replace({'App\\Entity\\':'', 'App\\':''}) }}</button>
+    <button class="hover:text-red-800 hover:border-red-400 hover:bg-red-300 hover:cursor-pointer border border-red-300 bg-red-100 px-1 rounded-r-xl ml-0"
+        hx-post="{{ path('autoadmin_collection_remove_element', {
+            'fqcn': owningFqcn|url_encode,
+            'id': owningId,
+            'field': field,
+            'refId': id
+        }) }}" 
+        hx-target="#collection-edit-{{ field }}" hx-swap="beforeend"
+        hx-on::after-request="this.parentElement.remove()"
+        hx-push-url="false">&times;</button>
+</div>

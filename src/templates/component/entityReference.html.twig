@@ -1,0 +1,6 @@
+<div class="mb-1">
+    <button class="hover:text-blue-800 hover:border-blue-400 hover:bg-blue-100 px-1 hover:cursor-pointer border border-blue-100 px-1 rounded-xl"
+        hx-get="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': id}) }}"
+        hx-push-url="true"
+        hx-target="#content" hx-swap="innerHTML">{{ label|replace({'App\\Entity\\':'', 'App\\':''}) }}</button>
+</div>

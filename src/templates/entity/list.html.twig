@@ -1,0 +1,76 @@
+<h1 class="text-xl">
+    <span class="text-gray-500">App\Entity\</span><span class="underline">{{ fqcn }}</span>
+    <span class="text-sm">( {{ nbItems }} items )</span>
+    {% if app.request.query.all|filter((v, k) => k starts with 'f_' and v is not empty)|length > 0 %}
+        <span class="text-sm text-gray-500"> - filtered by 
+            {{ app.request.query.all
+                |filter((v, k) => k starts with 'f_' and v is not empty)
+                |keys
+                |map((k) => k|replace({'f_': ''}) )
+                |join(', ') 
+            }}
+        </span>
+    {% endif %}
+</h1>
+<div>
+<div class="overflow-x-auto">
+    <form id="filterForm" 
+        hx-get="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode}) }}"
+        hx-trigger="change from:input"
+        hx-target="#content" hx-swap="innerHTML" hx-push-url="true">
+    <table class="table-auto m-4 ">
+        <thead>
+            <tr class="bg-gray-200">
+                {% for header in headers %}
+                    <th class="border border-white p-1 text-left">
+                        {{ header }}{% if identifier == header %} (PK){% endif %}<br/>
+                        {% if header in filterables %}
+                            <input type="text" 
+                                class="border w-full border-gray-200 rounded px-1 py-0.5 placeholder:text-black/40 text-purple-800 not-placeholder-shown:border-purple-800"
+                                placeholder="Filter"
+                                value="{{ app.request.query.get('f_' ~ header)|default('') }}"
+                                name="f_{{ header }}"/>
+                        {% else %}
+                            &nbsp;
+                        {% endif %}
+                    </th>
+                {% endfor %}
+            <th class="border border-white p-2 text-left">Actions</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in items %}
+                {{ item|raw }}
+            {% endfor %}
+        </tbody>
+    </table>
+    </form>
+</div>
+
+{# Pagination #}
+{% if totalPages > 1 %}
+    <div class="fixed bottom-4 left-1/2 transform -translate-x-1/2">
+        {% set filters = app.request.query|filter((v, k) => k starts with 'f_')|map((v, k) => k|url_encode ~ '=' ~ v|url_encode)|join('&') %}
+        {% for page in 1..totalPages %}
+            <button type="button" class="text-blue-800 hover:bg-gray-200 hover:cursor-pointer px-2 py-1 rounded {% if page == currentPage %}font-bold underline{% endif %}" 
+                hx-target="#content" 
+                hx-swap="innerHTML"
+                hx-push-url="true"
+                hx-get="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode, 'page': page}) }}&{{ filters|raw }}"
+                >
+                {{ page }}
+            </button>
+            {% if page < totalPages %}
+                &nbsp;|&nbsp;
+            {% endif %}
+        {% endfor %}
+    </div>
+{% endif %}
+
+<script>
+document.getElementById('filterForm').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+    }
+});
+</script>
