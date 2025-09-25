@@ -86,7 +86,7 @@ class EntityPrinter
                 hx-push-url=\"true\"
                 hx-target=\"#content\" hx-swap=\"innerHTML\">".$fieldValue."</a>";
         } else if (is_bool($fieldValue)) {
-            return $fieldValue ? 'true' : 'false';
+            return $fieldValue ? '<span class="text-green-800">⬤ true</span>' : '<span class="text-red-800">⬤ false</span>';
         } else if (is_array($fieldValue)) {
             try {
                 $tv = json_encode($fieldValue, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE);
@@ -94,7 +94,7 @@ class EntityPrinter
                 $tv = $th->getMessage();
             }
             if (strlen($tv) > $maxLength) {
-                return "<span title=\"".htmlspecialchars($tv)."\">".htmlspecialchars(substr($tv, 0, $maxLength)).'...</span>';
+                return "<span class=\"text-nowrap\" title=\"".htmlspecialchars($tv)."\">".htmlspecialchars(substr($tv, 0, $maxLength)).'...</span>';
             } else {
                 return htmlspecialchars($tv);
             }
@@ -183,7 +183,7 @@ class EntityPrinter
                 $out .= '<textarea name="'.$esField.'" class="w-full border border-gray-300 rounded px-1 py-0.5" '.$onChange.' style="field-sizing: content;">'.htmlspecialchars(json_encode($fieldValue, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)).'</textarea>';
                 break;
             case 'simple_array':
-                $out .= '<textarea name="'.$esField.'" class="w-full border border-gray-300 rounded px-1 py-0.5" '.$onChange.' style="field-sizing: content;">'.htmlspecialchars(implode(", ", $fieldValue)).'</textarea>';
+                $out .= '<textarea name="'.$esField.'" class="w-full border border-gray-300 rounded px-1 py-0.5" '.$onChange.' style="field-sizing: content;">'.htmlspecialchars(json_encode($fieldValue, JSON_PRETTY_PRINT|JSON_UNESCAPED_SLASHES|JSON_UNESCAPED_UNICODE)).'</textarea>';
                 break;
             default:
                 $out = "Type non géré: ".htmlspecialchars($fieldType);
@@ -212,10 +212,19 @@ class EntityPrinter
             // ManyToMany owning side
             $entity = $this->em->find($fqcn, $sourceId);
             $elementsCount = $classMetadata->getFieldValue($entity, $field)->count() ?? 0;
+        } else if( $mapping->isOneToMany() && isset($mapping['mappedBy'])) {
+            // OneToMany or ManyToMany inverse side
+            $elementsCount = $this->em->getRepository($associationFqcn)->count([$mapping['mappedBy'] ?? $mapping['inversedBy'] => $sourceId]);
         }
         return $this->twig->render('component/collectionLoader.html.twig', [
             'sourceId' => $sourceId,
-            'type' => $mapping->isManyToMany() ? 'ManyToMany' : 'OneToMany',
+            'type' => match($mapping['type'] ?? null) {
+                \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_MANY => '*to1',
+                \Doctrine\ORM\Mapping\ClassMetadata::ONE_TO_MANY => '1to*',
+                \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_ONE => '*to1',
+                \Doctrine\ORM\Mapping\ClassMetadata::ONE_TO_ONE => '1to1',
+                default => '?'
+            },
             'field' => $field,
             'elementCount' => $elementsCount,
             'fqcn' => $fqcn,

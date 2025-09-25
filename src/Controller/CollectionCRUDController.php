@@ -16,15 +16,14 @@ class CollectionCRUDController extends AutoAdminAbstractController
     public function viewCollection(string $fqcn, int $id, string $field, EntityManipulator $entityManipulator): Response
     {
         $fqcn = urldecode($fqcn);
+        $origin = $this->em->find($fqcn, $id);
+        if (!$origin) {
+            throw $this->createNotFoundException("Entity $fqcn with ID $id not found");
+        }
         $classMetadata = $this->em->getClassMetadata($fqcn);
         $association = $classMetadata->getAssociationMapping($field);
-        if (in_array($association['type']??null, [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY])) {
-            $fqcnAssociation = $association['targetEntity'];
-            $origin = $this->em->find($fqcn, $id);
-            $collection = $classMetadata->getFieldValue($origin, $field);
-        } else {
-            throw $this->createNotFoundException("Field $field is not a valid collection association for entity $fqcn");
-        }
+        $fqcnAssociation = $association['targetEntity'];
+        $collection = $entityManipulator->getCollection($origin, $field);
         $reverseIdField = $this->em->getClassMetadata($fqcnAssociation)->getIdentifier()[0] ?? null;
         return $this->render('modals/collection.html.twig', [
             'collection' => $entityManipulator->arrayToIdLabelMap($collection, $reverseIdField),
@@ -38,22 +37,21 @@ class CollectionCRUDController extends AutoAdminAbstractController
     public function updateCollection(string $fqcn, int $id, string $field, EntityManipulator $entityManipulator, Request $request): Response
     {
         $fqcn = urldecode($fqcn);
-        $classMetadata = $this->em->getClassMetadata($fqcn);
         $origin = $this->em->find($fqcn, $id);
+        if (!$origin) {
+            throw $this->createNotFoundException("Entity $fqcn with ID $id not found");
+        }
+        $classMetadata = $this->em->getClassMetadata($fqcn);
         $association = $classMetadata->getAssociationMapping($field);
         $fqcnAssociation = $association['targetEntity'];
-        if (in_array($association['type']??null, [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY])) {
-            $collection = $classMetadata->getFieldValue($origin, $field)->toArray();
-        } else {
-            throw $this->createNotFoundException("Field $field is not a valid collection association for entity $fqcn");
-        }
+        $collection = $entityManipulator->getCollection($origin, $field);
         $reverseIdField = $this->em->getClassMetadata($fqcnAssociation)->getIdentifier()[0] ?? null;
         if($request->isMethod('POST')){
             $data = $request->request->all();
             if(isset($data['remove'])){
                 foreach($data['remove'] as $toRemove){
                     [$f, $refId] = explode('/', $toRemove);
-                    $collection = array_filter($collection, fn($e) => $entityManipulator->getEntityId($e) != $refId);
+                    $collection = $collection->filter(fn($e) => $entityManipulator->getEntityId($e) != $refId);
                 }
                 unset($data['remove']);
             }
@@ -62,7 +60,7 @@ class CollectionCRUDController extends AutoAdminAbstractController
                     [$f, $refId] = explode('/', $toAdd);
                     $entityToAdd = $this->em->getRepository($fqcnAssociation)->find($refId);
                     if($entityToAdd){
-                        $collection[] = $entityToAdd;
+                        $collection->add($entityToAdd);
                     }
                 }
                 unset($data['add']);

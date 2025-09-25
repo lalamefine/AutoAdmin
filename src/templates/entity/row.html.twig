@@ -1,13 +1,13 @@
 
 <tr class="border-b border-gray-200 hover:bg-gray-100">
+    <td class="p-1 border border-gray-200 text-center">
+        <a class="hover:text-blue-800 hover:border-blue-300 px-1 hover:cursor-pointer border border-transparent bg-blue-100 mb-1 px-1 rounded-xl"
+            hx-get="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': entityRow[classMetadata.getIdentifierColumnNames()[0]]}) }}"
+            hx-push-url="true"
+            href="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': entityRow[classMetadata.getIdentifierColumnNames()[0]]}) }}"
+            hx-target="#content" hx-swap="innerHTML">Open</a>
+    </td>
     {% for h in headers %}
         <td class="p-1">{{ printableEntityAr[ h ]|raw }}</td>
     {% endfor %}
-    <td class="p-1">
-    <a class="hover:text-blue-800 hover:border-blue-300 px-1 hover:cursor-pointer border border-transparent bg-blue-100 mb-1 px-1 rounded-xl"
-        hx-get="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': entityRow[classMetadata.getIdentifierColumnNames()[0]]}) }}"
-        hx-push-url="true"
-        href="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': entityRow[classMetadata.getIdentifierColumnNames()[0]]}) }}"
-        hx-target="#content" hx-swap="innerHTML">View</a>
-    </td>
 </tr>

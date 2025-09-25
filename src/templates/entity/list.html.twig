@@ -21,6 +21,7 @@
     <table class="table-auto m-4 ">
         <thead>
             <tr class="bg-gray-200">
+                <th class="bg-white p-2 text-left"></th>
                 {% for header in headers %}
                     <th class="border border-white p-1 text-left">
                         {{ header }}{% if identifier == header %} (PK){% endif %}<br/>
@@ -35,7 +36,6 @@
                         {% endif %}
                     </th>
                 {% endfor %}
-            <th class="border border-white p-2 text-left">Actions</th>
             </tr>
         </thead>
         <tbody>

@@ -1,7 +1,9 @@
 <?php namespace Lalamefine\Autoadmin\Service;
 
+use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Mapping\Entity;
+use Doctrine\Persistence\Proxy;
 
 class EntityManipulator
 {
@@ -13,6 +15,30 @@ class EntityManipulator
     {
         $sfqcn = $this->entityManager->getRepository($fqcn)->getClassName();
         return $this->entityManager->getClassMetadata($sfqcn);
+    }
+
+    public function getCollection(object $originEntity, string $field): ArrayCollection
+    {
+        $fqcn = get_class($originEntity);
+        $classMetadata = $this->entityManager->getClassMetadata($fqcn);
+        $association = $classMetadata->getAssociationMapping($field);
+        $fqcnAssociation = $association['targetEntity'];
+        $mapping = $this->entityManager->getClassMetadata($fqcn)->getAssociationMapping($field);
+        $collection = [];
+        if ($mapping->isManyToMany()) {
+            $fieldValue = $classMetadata->getFieldValue($originEntity, $field);
+            $collection = $fieldValue->toArray();
+        } else if ($mapping->isOneToMany() && isset($mapping['mappedBy'])) {
+            $targetRepo = $this->entityManager->getRepository($fqcnAssociation);
+            $id = $this->getEntityId($originEntity);
+            if($id === null){
+                throw new \Exception("Impossible de récupérer l'identifiant de l'entité $fqcn");
+            }
+            $collection = $targetRepo->findBy([$mapping['mappedBy'] => $id]);
+        } else {
+            throw new \Exception("Cas non géré pour le champ $field de l'entité $fqcn");
+        }
+        return new ArrayCollection($collection);
     }
 
     public function arrayToIdLabelMap($arrayOrCollection, $identifierField = 'id'): array
@@ -76,8 +102,12 @@ class EntityManipulator
         if(isset($data[$metadata->getIdentifier()[0] ?? 'id'])){
             unset($data[$metadata->getIdentifier()[0] ?? 'id']);
         }
+        // dd(array_map(fn($field) => $metadata->getFieldMapping($field)['type'] ?? null, $metadata->getFieldNames()));
         foreach ($data as $field => $value) {
             if ($metadata->hasField($field)) {
+                if(in_array($metadata->getFieldMapping($field)['type'], ['simple_array', 'json', 'array']) && is_string($value)){
+                    $value = json_decode($value, true);
+                }
                 $metadata->setFieldValue($entity, $field, $value);
             } else if ($metadata->hasAssociation($field) && $metadata->getAssociationMapping($field)->isToOneOwningSide()) {
                 if($value === null){
@@ -92,39 +122,16 @@ class EntityManipulator
         $this->entityManager->persist($entity);
         return $entity;
     }
-
-    // public function updateEntityFromArray(string $fqcn, $id, array $data): ?object
-    // {
-    //     $entity = $this->entityManager->getRepository($fqcn)->find($id);
-    //     if (!$entity) {
-    //         return null;
-    //     }
-    //     $identifierField = $this->entityManager->getClassMetadata($fqcn)->getIdentifier()[0] ?? 'id';
-    //     $classMetadata = $this->entityManager->getClassMetadata($fqcn);
-    //     $targetColumns = [...$classMetadata->getFieldNames(), ...array_keys($classMetadata->getAssociationMappings())];
-    //     $qb = $this->entityManager->createQueryBuilder()
-    //         ->update( $fqcn, 'e')
-    //         ->where("e.$identifierField = :id")
-    //         ->setParameter('id', $id);
-    //     foreach($data as $field => $value){
-    //         if ($value === '') {
-    //             $value = null;
-    //         }
-    //         if(!$classMetadata->hasAssociation($field) || $classMetadata->getAssociationMapping($field)->isOwningSide()){
-    //             if(in_array($field, $targetColumns) && $field !== 'id'){
-    //                 $qb->set('e.'.$field, ':'.$field);
-    //                 $qb->setParameter($field, $value);
-    //             }
-    //         }
-    //     }
-    //     // dd($qb->getDQL(), $qb->getParameters());
-    //     $qb->getQuery()->execute();
-    //     return $entity;
-    // }
-
+    
     public function getEntityId($entity): ?int
     {
-        $ref = new \ReflectionObject($entity);
+        if ($entity instanceof Proxy) {
+            $entity->__load(); // force le chargement de toutes les données
+            $entityClass = get_parent_class($entity);
+        } else {
+            $entityClass = get_class($entity);
+        }
+        $ref = new \ReflectionClass($entityClass);
         $identifierField = $this->entityManager->getClassMetadata(get_class($entity))->getIdentifier()[0] ?? 'id';
         if ($ref->hasProperty($identifierField)) {
             $prop = $ref->getProperty($identifierField);

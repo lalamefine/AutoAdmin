@@ -130,7 +130,7 @@ class EntityCRUDController extends AutoAdminAbstractController
             if(isset($data['remove'])){
                 foreach($data['remove'] as $toRemove){
                     [$field, $refId] = explode('/', $toRemove);
-                    $originCollection = $classMetadata->getFieldValue($originEntity, $field);
+                    $originCollection = $entityManipulator->getCollection($originEntity, $field);
                     $originCollection = $originCollection->filter(fn($e) => $entityManipulator->getEntityId($e) != $refId);
                     $classMetadata->setFieldValue($originEntity, $field, $originCollection);
                     $this->em->persist($originEntity);
@@ -142,7 +142,7 @@ class EntityCRUDController extends AutoAdminAbstractController
                     [$field, $refId] = explode('/', $toAdd);
                     $originEntity = $this->em->find($fqcn, $id);
                     $targetEntity = $this->em->find($classMetadata->getAssociationMapping($field)['targetEntity'], $refId);
-                    $originCollection = $classMetadata->getFieldValue($originEntity, $field);
+                    $originCollection = $entityManipulator->getCollection($originEntity, $field);
                     $originCollection->add($targetEntity);
                     $classMetadata->setFieldValue($originEntity, $field, $originCollection);
                     $this->em->persist($originEntity);
