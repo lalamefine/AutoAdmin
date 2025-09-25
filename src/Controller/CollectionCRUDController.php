@@ -13,7 +13,7 @@ use Symfony\Component\Routing\Annotation\Route;
 class CollectionCRUDController extends AutoAdminAbstractController
 {
     #[Route('/collection/r/{fqcn}/{id}/{field}', name: 'autoadmin_collection_view', requirements: ['fqcn' => '.+'])]
-    public function viewCollection(string $fqcn, int $id, string $field, EntityManipulator $entityManipulator): Response
+    public function viewCollection(string $fqcn, int $id, string $field, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter): Response
     {
         $fqcn = urldecode($fqcn);
         $origin = $this->em->find($fqcn, $id);
@@ -26,7 +26,7 @@ class CollectionCRUDController extends AutoAdminAbstractController
         $collection = $entityManipulator->getCollection($origin, $field);
         $reverseIdField = $this->em->getClassMetadata($fqcnAssociation)->getIdentifier()[0] ?? null;
         return $this->render('modals/collection.html.twig', [
-            'collection' => $entityManipulator->arrayToIdLabelMap($collection, $reverseIdField),
+            'collection' => $entityPrinter->arrayToIdLabelMap($collection, $reverseIdField),
             'fqcn' => $fqcnAssociation,
             'originId' => $id,
             'update' => false
@@ -34,7 +34,7 @@ class CollectionCRUDController extends AutoAdminAbstractController
     }
 
     #[Route('/collection/u/{fqcn}/{id}/{field}', name: 'autoadmin_collection_update', requirements: ['fqcn' => '.+'])]
-    public function updateCollection(string $fqcn, int $id, string $field, EntityManipulator $entityManipulator, Request $request): Response
+    public function updateCollection(string $fqcn, int $id, string $field, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter, Request $request): Response
     {
         $fqcn = urldecode($fqcn);
         $origin = $this->em->find($fqcn, $id);
@@ -73,7 +73,7 @@ class CollectionCRUDController extends AutoAdminAbstractController
             $deletable = true;
         }
         return $this->render('modals/collection.html.twig', [
-            'collection' => $entityManipulator->arrayToIdLabelMap($collection, $reverseIdField),
+            'collection' => $entityPrinter->arrayToIdLabelMap($collection, $reverseIdField),
             'fqcn' => $fqcnAssociation,
             'owningFqcn' => $fqcn,
             'field' => $field,

@@ -31,6 +31,7 @@ class EntityCRUDController extends AutoAdminAbstractController
     #[Route('/entities/l/{fqcn}', name: 'autoadmin_entity_list', requirements: ['fqcn' => '.+'])]
     public function list(string $fqcn, EntityManipulator $entityManipulator, Request $request, EntityPrinter $entityPrinter): Response{
         $fqcn = urldecode($fqcn);
+        $perPage = $request->query->getInt('per_page', self::ITEMS_PER_PAGE);
         $page = max(1, (int)$request->query->get('page', 1));
         $classMetadata = $entityManipulator->getClassMetadata($fqcn);
         $qb = $this->em->createQueryBuilder()->addSelect("e")->from($fqcn, "e");
@@ -65,8 +66,8 @@ class EntityCRUDController extends AutoAdminAbstractController
         }
         $paginator = new Paginator($qb);
         $paginator->getQuery()
-            ->setFirstResult(self::ITEMS_PER_PAGE * ($page - 1)) // Offset
-            ->setMaxResults(self::ITEMS_PER_PAGE)->setHydrationMode(Query::HYDRATE_ARRAY); // Limit
+            ->setFirstResult($perPage * ($page - 1)) // Offset
+            ->setMaxResults($perPage)->setHydrationMode(Query::HYDRATE_ARRAY); // Limit
         $results = [...$paginator->getIterator()];
         // dd($results);
 
@@ -76,12 +77,13 @@ class EntityCRUDController extends AutoAdminAbstractController
         ]));
         return $this->render('entity/list.html.twig', [
             'fqcn' => $fqcn,
-            'page' => $page,
             'identifier' => $classMetadata->getIdentifier()[0] ?? null,
             'headers' => $headers,
             'filterables' => $filterables,
             'nbItems' => count($paginator),
-            'totalPages' => ceil(count($paginator) / self::ITEMS_PER_PAGE),
+            'currentPage' => $page,
+            'totalPages' => ceil(count($paginator) / $perPage),
+            'perPage' => $perPage,
             'items' => array_map(function($item) use ($entityPrinter, $fqcn, $headers) {
                 return $entityPrinter->printEntityRow($item, $fqcn, $headers, self::MAX_STRING_LENGTH_TABLE);
             }, $results)

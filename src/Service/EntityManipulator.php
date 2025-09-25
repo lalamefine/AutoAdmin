@@ -41,32 +41,6 @@ class EntityManipulator
         return new ArrayCollection($collection);
     }
 
-    public function arrayToIdLabelMap($arrayOrCollection, $identifierField = 'id'): array
-    {
-        $collection = is_array($arrayOrCollection) ? $arrayOrCollection : $arrayOrCollection->toArray();
-        return array_map(function($e) use ($identifierField) {
-            $id = null; $name = '';
-            $ref = new \ReflectionObject($e);
-            if ($ref->hasProperty($identifierField)) {
-                $prop = $ref->getProperty($identifierField);
-                $prop->setAccessible(true);
-                $id = $prop->getValue($e);
-            }
-            if(method_exists($e, '__toString')){
-                $name = $ref->getShortName(). '#'.$id.' ('. (string)$e .')';
-            } else if(method_exists($e, 'getName')){
-                $name = $ref->getShortName(). '#'.$id.' ('.$e->getName().')';
-            } else if(method_exists($e, 'getTitle')){
-                $name = $ref->getShortName(). '#'.$id.' ('.$e->getTitle().')';
-            } else {
-                $name = $ref->getShortName().'#'.$id;
-            }
-            return [
-                'id' => $id,
-                'name' => $name
-            ];
-        }, $collection);
-    } 
 
     public function getEntityArray($fqcn, $id, $fetchCollections = true): ?array
     {
