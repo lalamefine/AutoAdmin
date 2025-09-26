@@ -8,6 +8,7 @@ use Symfony\Component\Mime\MimeTypes;
 class CoreViewController extends AutoAdminAbstractController
 {
     #[Route('/index', name: 'autoadmin_index')]
+    #[Route('/', name: 'autoadmin_entry')]
     public function index()
     {
         return $this->render('index.html.twig');
