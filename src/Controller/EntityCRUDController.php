@@ -5,6 +5,7 @@ use Doctrine\ORM\Tools\Pagination\Paginator;
 use Lalamefine\Autoadmin\Controller\AutoAdminAbstractController;
 use Lalamefine\Autoadmin\Service\EntityManipulator;
 use Lalamefine\Autoadmin\Service\EntityPrinter;
+use ReflectionClass;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Annotation\Route;
@@ -91,7 +92,7 @@ class EntityCRUDController extends AutoAdminAbstractController
     }
 
     #[Route('/entity/r/{fqcn}/{id}', name: 'autoadmin_entity_view', requirements: ['fqcn' => '.+'])]
-    public function view(string $fqcn, int $id, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter): Response
+    public function view(string $fqcn, mixed $id, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter): Response
     {
         $fqcn = urldecode($fqcn);
         $classMetadata = $this->em->getClassMetadata($fqcn);
@@ -115,48 +116,65 @@ class EntityCRUDController extends AutoAdminAbstractController
 
     // }
 
-    #[Route('/entity/u/{fqcn}/{id}', name: 'autoadmin_entity_update', requirements: ['fqcn' => '.+', 'id' => '\d+'])]
-    public function update(string $fqcn, int $id, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter, Request $request): Response
+    #[Route('/entity/u/{fqcn}/{id}', name: 'autoadmin_entity_update', requirements: ['fqcn' => '.+'])]
+    public function update(string $fqcn, mixed $id, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter, Request $request): Response
     {
         $fqcn = urldecode($fqcn);
         $classMetadata = $this->em->getClassMetadata($fqcn);
         if($request->isMethod('POST')){
             $data = $request->request->all();
-            $originEntity = $this->em->find($fqcn, $id);
+            if ($id == 'new') {
+                $originEntity = (new ReflectionClass($fqcn))->newInstanceWithoutConstructor();
+                $this->em->persist($originEntity);
+            }else{
+                $originEntity = $this->em->find($fqcn, $id);
+            }
             foreach($data as $key => $value){
                 if(isset($data[$key.'_null']) && $data[$key.'_null']){
                     $data[$key] = null;
                     unset($data[$key.'_null'] );
                 }
             }
-            if(isset($data['remove'])){
-                foreach($data['remove'] as $toRemove){
-                    [$field, $refId] = explode('/', $toRemove);
-                    $originCollection = $entityManipulator->getCollection($originEntity, $field);
-                    $originCollection = $originCollection->filter(fn($e) => $entityManipulator->getEntityId($e) != $refId);
-                    $classMetadata->setFieldValue($originEntity, $field, $originCollection);
-                    $this->em->persist($originEntity);
+            if ($id != 'new') { // Manage collections only for existing entities
+                if(isset($data['remove'])){
+                    foreach($data['remove'] as $toRemove){
+                        [$field, $refId] = explode('/', $toRemove);
+                        $originCollection = $entityManipulator->getCollection($originEntity, $field);
+                        $originCollection = $originCollection->filter(fn($e) => $entityManipulator->getEntityId($e) != $refId);
+                        $classMetadata->setFieldValue($originEntity, $field, $originCollection);
+                        $this->em->persist($originEntity);
+                    }
+                    unset($data['remove']);
                 }
-                unset($data['remove']);
-            }
-            if(isset($data['add'])){
-                foreach($data['add'] as $toAdd){
-                    [$field, $refId] = explode('/', $toAdd);
-                    $originEntity = $this->em->find($fqcn, $id);
-                    $targetEntity = $this->em->find($classMetadata->getAssociationMapping($field)['targetEntity'], $refId);
-                    $originCollection = $entityManipulator->getCollection($originEntity, $field);
-                    $originCollection->add($targetEntity);
-                    $classMetadata->setFieldValue($originEntity, $field, $originCollection);
-                    $this->em->persist($originEntity);
+                if(isset($data['add'])){
+                    foreach($data['add'] as $toAdd){
+                        [$field, $refId] = explode('/', $toAdd);
+                        $originEntity = $this->em->find($fqcn, $id);
+                        $targetEntity = $this->em->find($classMetadata->getAssociationMapping($field)['targetEntity'], $refId);
+                        $originCollection = $entityManipulator->getCollection($originEntity, $field);
+                        $originCollection->add($targetEntity);
+                        $classMetadata->setFieldValue($originEntity, $field, $originCollection);
+                        $this->em->persist($originEntity);
+                    }
+                    unset($data['add']);
                 }
-                unset($data['add']);
             }
             $entityManipulator->updateEntityFromArray($originEntity, $data);
             $this->em->flush();
+            if($id == 'new'){
+                $id = $entityManipulator->getEntityId($originEntity);
+            }
             return $this->redirectToRoute('autoadmin_entity_view', ['fqcn' => $fqcn, 'id' => $id]);
         }
         
-        $entityArray = $entityManipulator->getEntityArray($fqcn, $id);
+        if ($id == 'new') {
+            $entityArray = array_fill_keys($classMetadata->getFieldNames(), null);
+            foreach(array_filter($classMetadata->getAssociationMappings(), fn($mapping) => $mapping->isToOneOwningSide()) as $field => $_){
+                $entityArray[$field] = null;
+            }
+        }else{
+            $entityArray = $entityManipulator->getEntityArray($fqcn, $id);
+        }
         return $this->render('entity/edit.html.twig', [
             'fqcn' => $fqcn,
             'entity' => $entityPrinter->printableEntityEditArray($entityArray, $fqcn),
@@ -165,12 +183,18 @@ class EntityCRUDController extends AutoAdminAbstractController
         ]);
     }
 
-    #[Route('/entity/d/{fqcn}/{id}', name: 'autoadmin_entity_delete', requirements: ['fqcn' => '.+', 'id' => '\d+'])]
-    public function delete(string $fqcn, int $id, EntityManipulator $entityManipulator, Request $request): Response
+    #[Route('/entity/d/{fqcn}/{id}', name: 'autoadmin_entity_delete', requirements: ['fqcn' => '.+'])]
+    public function delete(string $fqcn, mixed $id, EntityManipulator $entityManipulator, Request $request): Response
     {
         $fqcn = urldecode($fqcn);
         if ($request->isMethod('POST')) {
-            return new Response('(TODO) Delete entity '.$fqcn.' with id '.$id);
+            $entity = $this->em->find($fqcn, $id);
+            if (!$entity) {
+                throw $this->createNotFoundException();
+            }
+            $this->em->remove($entity);
+            $this->em->flush();
+            return $this->redirectToRoute('autoadmin_entity_list', ['fqcn' => $fqcn]);
         } else{
             return $this->render('entity/confirmDelete.html.twig', [
                 'fqcn' => $fqcn,

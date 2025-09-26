@@ -116,7 +116,8 @@ class EntityPrinter
     {
         $printable = [];
         $this->em->getClassMetadata($fqcn);
-        $entityId = $entity[$this->em->getClassMetadata($fqcn)->getIdentifier()[0] ?? 'id'] ?? null;
+        $entityField = $this->em->getClassMetadata($fqcn)->getIdentifier()[0] ?? 'id';
+        $entityId = $entity[$entityField] ?? null;
         $champsClassiques = $this->em->getClassMetadata($fqcn)->getFieldNames();
         foreach ($champsClassiques as $field) {
             $printable[$field] = $this->printValueEditInput($entity[$field] ?? null, $field, $fqcn);
@@ -124,6 +125,10 @@ class EntityPrinter
         $champsAssociations = $this->em->getClassMetadata($fqcn)->getAssociationMappings();
         foreach ($champsAssociations as $field => $mapping) {
             if ($mapping->isToMany()) {
+                if (!$entityId) {
+                    $printable[$field] = "<i class=\"text-gray-500\">(save entity to manage collection)</i>";
+                    continue;
+                }
                 $printable[$field] = $this->printCollectionLoader($entityId, $field, $fqcn, true);
             } else{
                 $printable[$field] = $this->printAssociationEditInput($entity[$field] ?? null, $field, $fqcn);
@@ -140,16 +145,17 @@ class EntityPrinter
         $identifierField = $classMetadata->getIdentifier()[0] ?? null;
         $fieldType = $this->em->getClassMetadata($fqcn)->getTypeOfField($field);
         $out = '<div class="flex flex-row gap-2 items-center mb-1">';
+        $esField = htmlspecialchars($field);
         if (in_array($field, $associations)) {
             return "Association editing not supported";
         } else if ($field === $identifierField) {
-            return '<input disabled type="text" value="'.htmlspecialchars((string)$fieldValue).'" readonly class="w-full border border-gray-300 rounded px-1 py-0.5 bg-gray-100"/>';
+            $disabled = ($fieldValue !== null) ? 'disabled readonly' : 'name="'.$esField.'"';
+            return '<input '.$disabled.' type="text" value="'.htmlspecialchars((string)$fieldValue).'"  class="w-full border border-gray-300 rounded px-1 py-0.5 '.($fieldValue !== null ? 'bg-gray-100' : '').'"/> ';
         }
-        $esField = htmlspecialchars($field);
         if ($classMetadata->isNullable($field)) {
             $onChange = " onchange=\"{$esField}_null.checked=false;\" ";
         } else {
-            $onChange = '';
+            $onChange = ' ';
         }
         switch ($fieldType) {
             case 'boolean':

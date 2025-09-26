@@ -1,19 +1,26 @@
 <h1 class="text-xl">
-    <span class="underline">{{ fqcn|replace({
-        'App\\Entity\\':'<span class="text-gray-500">App\\Entity\\</span>', 
-        'App\\':'<span class="text-gray-500">App\\</span>'
-        })|raw }}</span>
-    <span class="text-primary">( {{ id }} )</span>
-    <button 
-        class="hover:text-blue-800 hover:border-blue-300 px-1 hover:cursor-pointer border border-transparent bg-blue-100 mb-1 px-1 rounded-xl"
-        hx-get="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': id}) }}" 
-        hx-push-url="true"
-        hx-target="#content" hx-swap="innerHTML">View</button>
-    <button 
-        class="hover:text-red-800 hover:border-red-300 px-1 hover:cursor-pointer border border-transparent bg-red-100 mb-1 px-1 rounded-xl"
-        hx-get="{{ path('autoadmin_entity_delete', {'fqcn': fqcn|url_encode, 'id': id}) }}" 
-        hx-push-url="true"
-        hx-target="#content" hx-swap="innerHTML">Delete</button>
+    <a href="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode }) }}" class="hover:text-blue-800"
+        hx-get="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode }) }}" hx-push-url="true" hx-target="#content">
+        <span class="text-gray-500">App\Entity\</span><span class="underline">{{ fqcn|replace({
+            'App\\Entity\\':'',
+            })|raw }}</span>
+    </a>
+    {% if id == 'new' %}
+        <span class="text-green-500">(new)</span>
+    {% else %}
+        <span class="text-primary">( {{ id }} )</span>
+        <button 
+            class="hover:text-blue-800 hover:border-blue-300 px-1 hover:cursor-pointer border border-transparent bg-blue-100 mb-1 px-1 rounded-xl"
+            hx-get="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': id}) }}" 
+            hx-push-url="true"
+            hx-target="#content" hx-swap="innerHTML">View</button>
+        <button 
+            class="hover:text-red-800 hover:border-red-300 px-1 hover:cursor-pointer border border-transparent bg-red-100 mb-1 px-1 rounded-xl"
+            hx-get="{{ path('autoadmin_entity_delete', {'fqcn': fqcn|url_encode, 'id': id}) }}" 
+            hx-push-url="true"
+            hx-target="#content" hx-swap="innerHTML">Delete</button>
+    {% endif %}
+
 </h1>
 <form id="editForm" method="POST"
     hx-post="{{ path('autoadmin_entity_update', {'fqcn': fqcn|url_encode, 'id': id}) }}" 
@@ -36,7 +43,7 @@
     <button 
         class="hover:text-green-800 hover:border-green-300 hover:cursor-pointer border border-transparent bg-green-100 m-2 text-lg px-3 rounded-xl"
         type="submit"
-        >Save</button>
+        >{% if id == 'new' %}Create{% else %}Save{% endif %}</button>
 </div> 
 </form>
 
