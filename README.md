@@ -10,7 +10,7 @@ Installation
 2. If not done automatically, add the bundle in `config/bundles.php`:
     ```php
     return [
-        ...
+        // ...
         Lalamefine\Autoadmin\LalamefineAutoadminBundle::class => ['all' => true], // add this line
     ];
     ```
@@ -26,6 +26,13 @@ Installation
     You need to configure security at routing level <br>
     I do recommand restricting `/autoadmin` (or your custom prefix) to a specific user role in `config/packages/security.yaml`.
 
+    ```yaml
+    security: 
+        # ...
+        access_control:
+            - { path: ^/autoadmin, roles: ROLE_SUPER_ADMIN } # Add & customize this line
+            # ...
+    ```
 Screenshots
 ================
 From an improved version of the symfony sample project : https://github.com/symfony/demo
