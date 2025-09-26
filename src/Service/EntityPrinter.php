@@ -38,7 +38,14 @@ class EntityPrinter
     {
         $printable = [];
         $classMetadata = $this->em->getClassMetadata($fqcn);
-        $entityId = $entityRow[$classMetadata->getIdentifier()[0] ?? 'id'] ?? null;
+        if (count($classMetadata->getIdentifier()) != 1) {
+            throw new \Exception("Entity $fqcn needs to have exactly one identifier field, current: ".implode(', ', $classMetadata->getIdentifier()).".");
+        }
+        $idField = $classMetadata->getIdentifier()[0];
+        $entityId = $entityRow[$idField];
+        if (!$entityId) {
+            throw new \Exception("Entity id field $idField is missing or null in entity row for $fqcn.");
+        }
         foreach ($classMetadata->getFieldNames() as $field) {
             if(array_key_exists($field, $entityRow)){
                 $printable[$field] = $this->printValue($entityRow[$field], $field, $fqcn, $maxLength);
@@ -70,8 +77,10 @@ class EntityPrinter
     {
         $classMetadata = $this->em->getClassMetadata($fqcn);
         $associations = array_keys($classMetadata->getAssociationMappings());
-        $identifierField = $classMetadata->getIdentifier()[0] ?? null;
-        
+        if (count($classMetadata->getIdentifier()) != 1) {
+            throw new \Exception("Entity $fqcn needs to have exactly one identifier field, current: ".implode(', ', $classMetadata->getIdentifier()).".");
+        }
+        $identifierField = $classMetadata->getIdentifier()[0];
         if (in_array($field, $associations)) {
             $associationFqcn = $classMetadata->getAssociationTargetClass($field);
             $associationPK = $this->em->getClassMetadata($associationFqcn)->getIdentifierColumnNames()[0] ?? null;
@@ -81,6 +90,9 @@ class EntityPrinter
                 return $this->linkToEntity($associationFqcn, $fieldValue[$associationPK]);
             }
         } else if ($field === $identifierField) {
+            if ($fieldValue === null) {
+                return "<i class=\"text-red-500\">KO</i>";
+            }
             $rurl = $this->router->generate('autoadmin_entity_view', ['fqcn' => $fqcn, 'id' => $fieldValue]);
             return "<a class=\"hover:text-blue-800 bold bg-blue-100 hover:bg-blue-200 hover:border-blue-300 px-2 hover:cursor-pointer border border-transparent rounded-xl\"
                 hx-get=\"$rurl\" href=\"$rurl\"
