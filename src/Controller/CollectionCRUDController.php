@@ -12,7 +12,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class CollectionCRUDController extends AutoAdminAbstractController
 {
-    #[Route('/collection/r/{fqcn}/{id}/{field}', name: 'autoadmin_collection_view', requirements: ['fqcn' => '.+'])]
+    #[Route('/collection/r/{fqcn}/{id}/{field}', name: 'autoadmin_collection_view', requirements: ['fqcn' => '.+', 'id' => '.*'])]
     public function viewCollection(string $fqcn, mixed $id, string $field, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter): Response
     {
         $fqcn = urldecode($fqcn);
@@ -33,7 +33,7 @@ class CollectionCRUDController extends AutoAdminAbstractController
         ]);
     }
 
-    #[Route('/collection/u/{fqcn}/{id}/{field}', name: 'autoadmin_collection_update', requirements: ['fqcn' => '.+'])]
+    #[Route('/collection/u/{fqcn}/{id}/{field}', name: 'autoadmin_collection_update', requirements: ['fqcn' => '.+', 'id' => '.*'])]
     public function updateCollection(string $fqcn, mixed $id, string $field, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter, Request $request): Response
     {
         $fqcn = urldecode($fqcn);
@@ -83,7 +83,7 @@ class CollectionCRUDController extends AutoAdminAbstractController
         ]);
 }
 
-    #[Route('/collection/d/{fqcn}/{field}/{refId}', name: 'autoadmin_collection_remove_element', requirements: ['fqcn' => '.+'], methods: ['POST'])]
+    #[Route('/collection/d/{fqcn}/{field}/{refId}', name: 'autoadmin_collection_remove_element', requirements: ['fqcn' => '.+', 'refId' => '.*'], methods: ['POST'])]
     public function removeElement(string $fqcn, string $field, int $refId, EntityPrinter $entityPrinter): Response
     {
         $fqcn = urldecode($fqcn);
