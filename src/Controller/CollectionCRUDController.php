@@ -67,7 +67,7 @@ class CollectionCRUDController extends AutoAdminAbstractController
             }
         }
 
-        if($association->isOwningSide() && !$association->isManyToMany()){
+        if(isset($association['isOwningSide']) && $association['isOwningSide'] && $association['type'] != \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_MANY){
             $deletable = $this->em->getClassMetadata($fqcnAssociation)->getAssociationMapping($association['mappedBy'])['joinColumns'][0]['nullable'] ?? false;
         } else {
             $deletable = true;

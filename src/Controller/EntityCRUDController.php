@@ -37,7 +37,7 @@ class EntityCRUDController extends AutoAdminAbstractController
         $classMetadata = $entityManipulator->getClassMetadata($fqcn);
         $qb = $this->em->createQueryBuilder()->addSelect("e")->from($fqcn, "e");
         $i = 0;
-        $mappings = array_filter($classMetadata->getAssociationMappings(), fn($mapping) => !$mapping->isToMany());
+        $mappings = array_filter($classMetadata->getAssociationMappings(), fn($mapping) => !in_array($mapping['type'], [\Doctrine\ORM\Mapping\ClassMetadata::ONE_TO_MANY, \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_MANY]));
         foreach($mappings as $field => $mapping){
             $letters = substr($field, 0, 3);
             $qb->leftJoin("e.{$field}", "{$letters}_{$i}");
@@ -174,7 +174,7 @@ class EntityCRUDController extends AutoAdminAbstractController
         // Get entity data as array
         if ($id == 'new') {
             $entityArray = array_fill_keys($classMetadata->getFieldNames(), null);
-            foreach(array_filter($classMetadata->getAssociationMappings(), fn($mapping) => $mapping->isToOneOwningSide()) as $field => $_){
+            foreach(array_filter($classMetadata->getAssociationMappings(), fn($mapping) => in_array($mapping['type'], [\Doctrine\ORM\Mapping\ClassMetadata::ONE_TO_ONE, \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_ONE]) && isset($mapping['isOwningSide']) && $mapping['isOwningSide']) as $field => $_){
                 $entityArray[$field] = null;
             }
         }else{

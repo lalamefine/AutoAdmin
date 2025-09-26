@@ -3,6 +3,7 @@
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Exception\EntityManagerClosed;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Mapping\Entity;
 use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Persistence\Proxy;
@@ -27,10 +28,10 @@ class EntityManipulator
         $fqcnAssociation = $association['targetEntity'];
         $mapping = $this->entityManager->getClassMetadata($fqcn)->getAssociationMapping($field);
         $collection = [];
-        if ($mapping->isManyToMany()) {
+        if ($mapping['type'] == ClassMetadata::MANY_TO_MANY) {
             $fieldValue = $classMetadata->getFieldValue($originEntity, $field);
             $collection = $fieldValue->toArray();
-        } else if ($mapping->isOneToMany() && isset($mapping['mappedBy'])) {
+        } else if ($mapping['type'] == ClassMetadata::ONE_TO_MANY && isset($mapping['mappedBy'])) {
             $targetRepo = $this->entityManager->getRepository($fqcnAssociation);
             $id = $this->getEntityId($originEntity);
             if($id === null){
@@ -55,7 +56,7 @@ class EntityManipulator
 
         $classMetadata = $this->entityManager->getClassMetadata($fqcn);
         $i = 0;
-        $mappings = array_filter($classMetadata->getAssociationMappings(), fn($mapping) => $fetchCollections || !$mapping->isToMany());
+        $mappings = array_filter($classMetadata->getAssociationMappings(), fn($mapping) => $fetchCollections || !in_array($mapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY]));
         foreach($mappings as $field => $_){
             $letters = substr($field, 0, 3);
             $qb->leftJoin("e.$field", "{$letters}_{$i}");
@@ -98,7 +99,7 @@ class EntityManipulator
                         $value = json_decode($value, true);
                     }
                     $metadata->setFieldValue($entity, $field, $value);
-                } else if ($metadata->hasAssociation($field) && $metadata->getAssociationMapping($field)->isToOneOwningSide()) {
+                } else if ($metadata->hasAssociation($field) && in_array($metadata->getAssociationMapping($field)['type'], [ClassMetadata::ONE_TO_ONE, ClassMetadata::MANY_TO_ONE]) && isset($metadata->getAssociationMapping($field)['isOwningSide']) && $metadata->getAssociationMapping($field)['isOwningSide']) {
                     if($value === null){
                         $metadata->setFieldValue($entity, $field, null);
                     }else{

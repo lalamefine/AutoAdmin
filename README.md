@@ -3,8 +3,6 @@ Description
 This bundle generates admin pages automatically with no need for configuration.
 You can manage your Doctrine entities (list, create, edit, delete, associations included) with a simple and clean interface that makes use of `__toString()` methods.
 
-It is a no-dependency bundle and it only includes htmx.
-
 Installation
 ================
 1. Run `composer require lalamefine/autoadmin`

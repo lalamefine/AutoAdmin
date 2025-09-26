@@ -1,6 +1,7 @@
 <?php namespace Lalamefine\Autoadmin\Service;
 
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\Persistence\Proxy;
 use Lalamefine\Autoadmin\LalamefineAutoadminBundle;
 use Symfony\Component\Routing\RouterInterface;
@@ -47,7 +48,7 @@ class EntityPrinter
         }
         foreach ($classMetadata->getAssociationMappings() as $field => $associationMapping) {
             $value = $entityRow[$field] ?? null;
-            if($associationMapping->isToMany() && $allowCollections){
+            if(in_array($associationMapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY]) && $allowCollections){
                 // $newValues = [];
                 // if(is_array($value)){
                 //     foreach($value as $assocEntity){
@@ -124,7 +125,7 @@ class EntityPrinter
         }
         $champsAssociations = $this->em->getClassMetadata($fqcn)->getAssociationMappings();
         foreach ($champsAssociations as $field => $mapping) {
-            if ($mapping->isToMany()) {
+            if (in_array($mapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY])) {
                 if (!$entityId) {
                     $printable[$field] = "<i class=\"text-gray-500\">(save entity to manage collection)</i>";
                     continue;
@@ -210,15 +211,15 @@ class EntityPrinter
         }
         $mapping = $classMetadata->getAssociationMapping($field);
         $associationFqcn = $mapping['targetEntity'];
-        if ($modeEdition && !$mapping->isToMany()) {
+        if ($modeEdition && !in_array($mapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY])) {
             return "Not a to-many association";
         }
         $elementsCount = 0;
-        if ($mapping->isManyToMany()) {
+        if ($mapping['type'] == ClassMetadata::MANY_TO_MANY) {
             // ManyToMany owning side
             $entity = $this->em->find($fqcn, $sourceId);
             $elementsCount = $classMetadata->getFieldValue($entity, $field)->count() ?? 0;
-        } else if( $mapping->isOneToMany() && isset($mapping['mappedBy'])) {
+        } else if( $mapping['type'] == ClassMetadata::ONE_TO_MANY && isset($mapping['mappedBy'])) {
             // OneToMany or ManyToMany inverse side
             $elementsCount = $this->em->getRepository($associationFqcn)->count([$mapping['mappedBy'] ?? $mapping['inversedBy'] => $sourceId]);
         }
@@ -277,7 +278,7 @@ class EntityPrinter
         $associationFqcn = $mapping['targetEntity'];
         $associationClassMetadata = $this->em->getClassMetadata($associationFqcn);
         $associationPK = $associationClassMetadata->getIdentifierColumnNames()[0] ?? null;
-        if(!$mapping->isOwningSide()){
+        if(!isset($mapping['isOwningSide']) || !$mapping['isOwningSide']){
             return '<div class="flex flex-row gap-2">
                 <span class="text-gray-500 text-nowrap">Referenced by '.$associationFqcn.': </span>'.
                 htmlspecialchars((string)($fieldValue[$associationPK] ?? ''))
