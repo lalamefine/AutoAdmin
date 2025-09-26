@@ -8,7 +8,8 @@
     </head>
     <body class="h-screen overflow-hidden">
         <div class="flex h-full w-full">
-            <div class="p-5 border-r-2 h-full min-w-fit overflow-y-auto" hx-get="{{ path('autoadmin_navbar') }}" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
+            <div class="p-5 h-full min-w-fit overflow-y-auto" style="box-shadow: 1px 0px 5px #80808070;" 
+                hx-get="{{ path('autoadmin_navbar') }}" hx-trigger="load" hx-target="this" hx-swap="innerHTML">
                 Loading...
             </div>
             <div class="p-5 overflow-auto grow" id="content">
