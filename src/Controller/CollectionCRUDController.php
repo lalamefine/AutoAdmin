@@ -92,7 +92,6 @@ class CollectionCRUDController extends AutoAdminAbstractController
         if(!$fqcnAssociation){
             throw $this->createNotFoundException("Field $field is not a valid association for entity $fqcn");
         }
-        // $entityManipulator->removeElementFromCollection($fqcn, $id, $field, $refId);
         return new Response('<div class="hover:line-through hover:cursor-pointer" onclick="this.remove()">
             <input type="hidden" name="remove[]" class="subform-'.$field.'" value="'.$field.'/'.$refId.'" />
             <span class="text-red-600"> &minus; '.$entityPrinter->makeEntityIdentifierFromClassAndId($fqcnAssociation, $refId).'</span>

@@ -56,15 +56,6 @@ class EntityPrinter
         foreach ($classMetadata->getAssociationMappings() as $field => $associationMapping) {
             $value = $entityRow[$field] ?? null;
             if(in_array($associationMapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY]) && $allowCollections){
-                // $newValues = [];
-                // if(is_array($value)){
-                //     foreach($value as $assocEntity){
-                //         $associationFqcn = $associationMapping['targetEntity'];
-                //         $associationPK = $this->em->getClassMetadata($associationFqcn)->getIdentifier()[0] ?? null;
-                //         $newValues[] = $this->linkToEntity($associationFqcn, $assocEntity[$associationPK] ?? 'n/a');
-                //     }
-                // }
-                // $printable[$field] = $newValues;
                 $printable[$field] = $this->printCollectionLoader($entityId, $field, $fqcn, false);
             }else{
                 $printable[$field] = $this->printValue($value, $field, $fqcn, $maxLength);
@@ -238,10 +229,10 @@ class EntityPrinter
         return $this->twig->render('component/collectionLoader.html.twig', [
             'sourceId' => $sourceId,
             'type' => match($mapping['type'] ?? null) {
-                \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_MANY => '*to1',
-                \Doctrine\ORM\Mapping\ClassMetadata::ONE_TO_MANY => '1to*',
-                \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_ONE => '*to1',
-                \Doctrine\ORM\Mapping\ClassMetadata::ONE_TO_ONE => '1to1',
+                ClassMetadata::MANY_TO_MANY => '*to1',
+                ClassMetadata::ONE_TO_MANY => '1to*',
+                ClassMetadata::MANY_TO_ONE => '*to1',
+                ClassMetadata::ONE_TO_ONE => '1to1',
                 default => '?'
             },
             'field' => $field,

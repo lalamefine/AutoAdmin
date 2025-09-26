@@ -20,7 +20,7 @@ class ErrorController extends AutoAdminAbstractController
 
     public function showError(int $statusCode, ?Throwable $exception = null): Response
     {
-        // Si aucune exception n'est passée, créer une générique
+        // If no exception provided, create a generic one
         if (!$exception) {
             $exception = new \Exception("Une erreur inattendue s'est produite (code: $statusCode)");
         }
@@ -32,7 +32,7 @@ class ErrorController extends AutoAdminAbstractController
     #[Route('/error/test', name: 'autoadmin_error_test')]
     public function testError(): void
     {
-        // Méthode pour tester l'affichage d'erreur
+        // Method to test error display
         throw new \Exception('Ceci est une erreur de test pour vérifier l\'affichage.');
     }
 }

@@ -27,7 +27,7 @@ class EntityManipulator
         $mapping = $classMetadata->getAssociationMapping($field);
         // Load if proxy
         if ($originEntity instanceof Proxy) {
-            $originEntity->__load(); // force le chargement de toutes les données
+            $originEntity->__load();
         }
 
         if (
@@ -80,14 +80,9 @@ class EntityManipulator
                 unset($data[$metadata->getIdentifier()[0] ?? 'id']);
             }
         }
-        // dd(array_map(fn($field) => $metadata->getFieldMapping($field)['type'] ?? null, $metadata->getFieldNames()));
         $this->entityManager->persist($entity);
         $rejections = [];
         foreach ($data as $field => $value) {
-            $oldValue = null;
-            if ($metadata->hasField($field) || $metadata->hasAssociation($field)) {
-                $oldValue = $metadata->getFieldValue($entity, $field);
-            }
             try {
                 if ($metadata->hasField($field)) {
                     if(in_array($metadata->getFieldMapping($field)['type'], ['simple_array', 'json', 'array']) && is_string($value)){
@@ -105,7 +100,7 @@ class EntityManipulator
                 }
                 $this->entityManager->flush();
             } catch (EntityManagerClosed $e) {
-                // Ignore
+                // Ignore EntityManagerClosed exceptions (flush will close it on first error)
             } catch (\Throwable $th) {
                 $rejections[$field] = [
                     'reason' => str_replace('An exception occurred while executing a query: ', '', $th->getMessage()),
@@ -120,8 +115,8 @@ class EntityManipulator
     {
         try {
             if ($entity instanceof Proxy) {
-                $entity->__load(); // force le chargement de toutes les données
                 $entityClass = get_parent_class($entity);
+                $entity->__load(); // force loading if it's a proxy
             } else {
                 $entityClass = get_class($entity);
             }

@@ -21,13 +21,13 @@ class ExceptionListener
     {
         $routeName = $event->getRequest()->attributes->get('_route');
         if (!$routeName || !str_starts_with($routeName, 'autoadmin_')) {
-            return; // Ne pas intercepter les erreurs hors du bundle
+            return; // Do not handle exceptions for non-autoadmin routes
         }
 
         $exception = $event->getThrowable();
         $statusCode = $exception instanceof HttpExceptionInterface ? $exception->getStatusCode() : 500;
 
-        // Rendre la réponse d'erreur en utilisant le contrôleur d'erreur
+        // Render the error response using the error controller
         $response = $this->errorController->showError($statusCode, $exception);
         $event->setResponse($response);
     }

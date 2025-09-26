@@ -70,7 +70,6 @@ class EntityCRUDController extends AutoAdminAbstractController
             ->setFirstResult($perPage * ($page - 1)) // Offset
             ->setMaxResults($perPage)->setHydrationMode(Query::HYDRATE_ARRAY); // Limit
         $results = [...$paginator->getIterator()];
-        // dd($results);
 
         $headers = array_merge($classMetadata->getFieldNames(), array_keys($mappings));
         $filterables = array_filter( $headers, fn($field) => in_array($classMetadata->getTypeOfField($field), [
@@ -110,12 +109,6 @@ class EntityCRUDController extends AutoAdminAbstractController
         ]);
     }
 
-    // #[Route('/entity/c/{fqcn}', name: 'autoadmin_entity_create', requirements: ['fqcn' => '.+'])]
-    // public function create(string $fqcn, EntityManipulator $entityManipulator): Response
-    // {
-
-    // }
-
     #[Route('/entity/u/{fqcn}/{id}', name: 'autoadmin_entity_update', requirements: ['fqcn' => '.+'])]
     public function update(string $fqcn, mixed $id, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter, Request $request, array $rejections = []): Response
     {
@@ -136,7 +129,8 @@ class EntityCRUDController extends AutoAdminAbstractController
                     unset($data[$key.'_null'] );
                 }
             }
-            if ($id != 'new') { // Manage collections only for existing entities
+            // Collection management (many-to-many and one-to-many associations)
+            if ($id != 'new') { // only for existing entities
                 if(isset($data['remove'])){
                     foreach($data['remove'] as $toRemove){
                         [$field, $refId] = explode('/', $toRemove);
@@ -161,10 +155,10 @@ class EntityCRUDController extends AutoAdminAbstractController
                 }
             }
             $this->em->flush();
+            // Update entity from form data
             $rejections = $entityManipulator->updateEntityFromArray($originEntity, $data);
             if(count($rejections) > 0){
-                $fakeRequest = new Request();
-                return $this->update($fqcn, $id, $entityManipulator, $entityPrinter, $fakeRequest, $rejections);
+                return $this->update($fqcn, $id, $entityManipulator, $entityPrinter, new Request(), $rejections);
             }
             if($id == 'new'){
                 $id = $entityManipulator->getEntityId($originEntity);
@@ -174,7 +168,12 @@ class EntityCRUDController extends AutoAdminAbstractController
         // Get entity data as array
         if ($id == 'new') {
             $entityArray = array_fill_keys($classMetadata->getFieldNames(), null);
-            foreach(array_filter($classMetadata->getAssociationMappings(), fn($mapping) => in_array($mapping['type'], [\Doctrine\ORM\Mapping\ClassMetadata::ONE_TO_ONE, \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_ONE]) && isset($mapping['isOwningSide']) && $mapping['isOwningSide']) as $field => $_){
+            $filteredAssociations = array_filter($classMetadata->getAssociationMappings(), 
+                fn($mapping) => in_array($mapping['type'], [
+                        \Doctrine\ORM\Mapping\ClassMetadata::ONE_TO_ONE, 
+                        \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_ONE
+                    ]) && isset($mapping['isOwningSide']) && $mapping['isOwningSide']);
+            foreach($filteredAssociations as $field => $_){
                 $entityArray[$field] = null;
             }
         }else{

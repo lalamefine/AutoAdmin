@@ -10,7 +10,6 @@ class NavBarController extends AutoAdminAbstractController
     public function navbar(EntityManipulator $entityManipulator)
     {
         $entities = $entityManipulator->listEntities();
-        // $entities = array_map(fn($e) => str_replace("App\\Entity\\", '', $e), $entities);
         return $this->render('navbar.html.twig', [
             'items' => $this->buildTree($entities)
         ]);
