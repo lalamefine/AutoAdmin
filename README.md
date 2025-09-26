@@ -1,8 +1,9 @@
 Description
 ================
 This bundle generates admin pages automatically with no need for configuration.
-You can manage your Doctrine entities (list, create, edit, delete, associations included) with a simple and clean interface that makes use of `__toString()` methods.
-It only works with Single Column Identifiers (required and no composite keys) for now.
+You can manage your Doctrine entities (list, create, edit, delete and associations, when included in entities) 
+The interface is simple and without clutter nor noise and makes use of `__toString()` methods to display meaningful information.
+It only works with Single Column Identifiers for now but support for composite keys may be added in the future.
 
 Installation
 ================
