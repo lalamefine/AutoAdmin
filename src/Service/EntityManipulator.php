@@ -1,6 +1,7 @@
 <?php namespace Lalamefine\Autoadmin\Service;
 
 use Doctrine\Common\Collections\ArrayCollection;
+use Doctrine\Common\Collections\Collection;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Exception\EntityManagerClosed;
 use Doctrine\ORM\Mapping\ClassMetadata;
@@ -20,28 +21,22 @@ class EntityManipulator
         return $this->entityManager->getClassMetadata($sfqcn);
     }
 
-    public function getCollection(object $originEntity, string $field): ArrayCollection
+    public function getCollection(object $originEntity, string $field): Collection
     {
-        $fqcn = get_class($originEntity);
-        $classMetadata = $this->entityManager->getClassMetadata($fqcn);
-        $association = $classMetadata->getAssociationMapping($field);
-        $fqcnAssociation = $association['targetEntity'];
-        $mapping = $this->entityManager->getClassMetadata($fqcn)->getAssociationMapping($field);
-        $collection = [];
-        if ($mapping['type'] == ClassMetadata::MANY_TO_MANY) {
-            $fieldValue = $classMetadata->getFieldValue($originEntity, $field);
-            $collection = $fieldValue->toArray();
-        } else if ($mapping['type'] == ClassMetadata::ONE_TO_MANY && isset($mapping['mappedBy'])) {
-            $targetRepo = $this->entityManager->getRepository($fqcnAssociation);
-            $id = $this->getEntityId($originEntity);
-            if($id === null){
-                throw new \Exception("Impossible de récupérer l'identifiant de l'entité $fqcn");
-            }
-            $collection = $targetRepo->findBy([$mapping['mappedBy'] => $id]);
-        } else {
-            throw new \Exception("Cas non géré pour le champ $field de l'entité $fqcn");
+        $classMetadata = $this->entityManager->getClassMetadata(get_class($originEntity));
+        $mapping = $classMetadata->getAssociationMapping($field);
+        // Load if proxy
+        if ($originEntity instanceof Proxy) {
+            $originEntity->__load(); // force le chargement de toutes les données
         }
-        return new ArrayCollection($collection);
+
+        if (
+            in_array($mapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY])
+        ) {
+            return $classMetadata->getFieldValue($originEntity, $field);
+        } else {
+            throw new \Exception("Cas non géré pour le champ $field de l'entité ".get_class($originEntity));
+        }
     }
 
 

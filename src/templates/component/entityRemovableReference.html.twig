@@ -1,5 +1,5 @@
 <div class="flex mb-1">
-    <a class="flex hover:text-blue-800 hover:border-blue-400 hover:bg-blue-100 hover:cursor-pointer border border-blue-100 px-1 rounded-l-xl mr-0"
+    <a class="flex justify-between hover:text-blue-800 hover:border-blue-400 hover:bg-blue-100 hover:cursor-pointer border border-blue-100 px-1 rounded-l-xl mr-0"
         hx-get="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': id}) }}"
         href="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': id}) }}"
         hx-push-url="true"

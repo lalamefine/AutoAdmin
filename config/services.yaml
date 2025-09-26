@@ -10,3 +10,10 @@ services:
         resource: '../src/'
         exclude:
             - '../src/Entity/'
+
+    Lalamefine\Autoadmin\EventListener\ExceptionListener:
+        arguments:
+            - '@twig'
+            - '@Lalamefine\Autoadmin\Controller\ErrorController'
+        tags:
+            - { name: kernel.event_listener, event: kernel.exception, priority: 10 }

@@ -17,6 +17,7 @@ class LalamefineAutoadminBundle extends AbstractBundle
         // load an XML, PHP or YAML file
         $container->import('../config/services.yaml');
         
+        
     }
     
 }

@@ -91,7 +91,7 @@ class EntityCRUDController extends AutoAdminAbstractController
         ]);
     }
 
-    #[Route('/entity/r/{fqcn}/{id}', name: 'autoadmin_entity_view', requirements: ['fqcn' => '.+', 'id' => '.*'])]
+    #[Route('/entity/r/{fqcn}/{id}', name: 'autoadmin_entity_view', requirements: ['fqcn' => '.*'])]
     public function view(string $fqcn, mixed $id, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter): Response
     {
         $fqcn = urldecode($fqcn);
@@ -116,7 +116,7 @@ class EntityCRUDController extends AutoAdminAbstractController
 
     // }
 
-    #[Route('/entity/u/{fqcn}/{id}', name: 'autoadmin_entity_update', requirements: ['fqcn' => '.+', 'id' => '.*'])]
+    #[Route('/entity/u/{fqcn}/{id}', name: 'autoadmin_entity_update', requirements: ['fqcn' => '.+'])]
     public function update(string $fqcn, mixed $id, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter, Request $request, array $rejections = []): Response
     {
         $fqcn = urldecode($fqcn);
@@ -196,7 +196,7 @@ class EntityCRUDController extends AutoAdminAbstractController
         ]);
     }
 
-    #[Route('/entity/d/{fqcn}/{id}', name: 'autoadmin_entity_delete', requirements: ['fqcn' => '.+', 'id' => '.*'])]
+    #[Route('/entity/d/{fqcn}/{id}', name: 'autoadmin_entity_delete', requirements: ['fqcn' => '.+'])]
     public function delete(string $fqcn, mixed $id, EntityManipulator $entityManipulator, Request $request): Response
     {
         $fqcn = urldecode($fqcn);

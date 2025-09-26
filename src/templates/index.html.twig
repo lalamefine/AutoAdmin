@@ -3,6 +3,8 @@
         <title>AutoAdmin</title>
         <link rel="stylesheet" href="{{ asset('styles.css') }}">
         <script src="{{ asset('htmx.min.js') }}" defer></script>
+        <meta name="htmx-config" content='{"responseHandling": [{"code":".*", "swap": true}]}' /> <!--all responses are swapped-->
+        <link rel="icon" type="image/x-icon" href="{{ asset('favicon.ico') }}">
     </head>
     <body class="h-screen overflow-hidden">
         <div class="flex h-full w-full">
