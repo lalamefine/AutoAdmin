@@ -2,12 +2,14 @@
 
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\ORM\EntityManagerInterface;
+use Doctrine\ORM\Exception\EntityManagerClosed;
 use Doctrine\ORM\Mapping\Entity;
+use Doctrine\Persistence\ManagerRegistry;
 use Doctrine\Persistence\Proxy;
 
 class EntityManipulator
 {
-    public function __construct(private EntityManagerInterface $entityManager)
+    public function __construct(private EntityManagerInterface $entityManager, private ManagerRegistry $doctrine)
     {
     }
 
@@ -68,49 +70,74 @@ class EntityManipulator
         return $this->entityManager->getConfiguration()->getMetadataDriverImpl()->getAllClassNames();
     }
 
-    public function updateEntityFromArray(object $entity, array $data){
+
+    public function updateEntityFromArray(object $entity, array $data) : array{
+        $this->entityManager->flush();
         $metadata = $this->entityManager->getClassMetadata(get_class($entity));
         if(!$metadata) {
             throw new \InvalidArgumentException("Invalid entity class");
         }
         if(isset($data[$metadata->getIdentifier()[0] ?? 'id'])){
-            unset($data[$metadata->getIdentifier()[0] ?? 'id']);
+            $repo = $this->entityManager->getRepository(get_class($entity));
+            $existingEntity = $repo->find($data[$metadata->getIdentifier()[0] ?? 'id']);
+            if($existingEntity){ // Do not allow ID updates on an existing entity
+                unset($data[$metadata->getIdentifier()[0] ?? 'id']);
+            }
         }
         // dd(array_map(fn($field) => $metadata->getFieldMapping($field)['type'] ?? null, $metadata->getFieldNames()));
-        foreach ($data as $field => $value) {
-            if ($metadata->hasField($field)) {
-                if(in_array($metadata->getFieldMapping($field)['type'], ['simple_array', 'json', 'array']) && is_string($value)){
-                    $value = json_decode($value, true);
-                }
-                $metadata->setFieldValue($entity, $field, $value);
-            } else if ($metadata->hasAssociation($field) && $metadata->getAssociationMapping($field)->isToOneOwningSide()) {
-                if($value === null){
-                    $metadata->setFieldValue($entity, $field, null);
-                }else{
-                    $targetEntityFqcn = $metadata->getAssociationMapping($field)['targetEntity'];
-                    $targetEntity = $this->entityManager->getRepository($targetEntityFqcn)->find($value);
-                    $metadata->setFieldValue($entity, $field, $targetEntity);
-                }
-            }
-        }   
         $this->entityManager->persist($entity);
-        return $entity;
+        $rejections = [];
+        foreach ($data as $field => $value) {
+            $oldValue = null;
+            if ($metadata->hasField($field) || $metadata->hasAssociation($field)) {
+                $oldValue = $metadata->getFieldValue($entity, $field);
+            }
+            try {
+                if ($metadata->hasField($field)) {
+                    if(in_array($metadata->getFieldMapping($field)['type'], ['simple_array', 'json', 'array']) && is_string($value)){
+                        $value = json_decode($value, true);
+                    }
+                    $metadata->setFieldValue($entity, $field, $value);
+                } else if ($metadata->hasAssociation($field) && $metadata->getAssociationMapping($field)->isToOneOwningSide()) {
+                    if($value === null){
+                        $metadata->setFieldValue($entity, $field, null);
+                    }else{
+                        $targetEntityFqcn = $metadata->getAssociationMapping($field)['targetEntity'];
+                        $targetEntity = $this->entityManager->getRepository($targetEntityFqcn)->find($value);
+                        $metadata->setFieldValue($entity, $field, $targetEntity);
+                    }
+                }
+                $this->entityManager->flush();
+            } catch (EntityManagerClosed $e) {
+                // Ignore
+            } catch (\Throwable $th) {
+                $rejections[$field] = [
+                    'reason' => str_replace('An exception occurred while executing a query: ', '', $th->getMessage()),
+                    'value' => is_object($value) ? '!object' : (is_array($value) ? '!array' : $value)
+                ];
+            }
+        }
+        return $rejections;
     }
     
     public function getEntityId($entity): ?int
     {
-        if ($entity instanceof Proxy) {
-            $entity->__load(); // force le chargement de toutes les données
-            $entityClass = get_parent_class($entity);
-        } else {
-            $entityClass = get_class($entity);
-        }
-        $ref = new \ReflectionClass($entityClass);
-        $identifierField = $this->entityManager->getClassMetadata(get_class($entity))->getIdentifier()[0] ?? 'id';
-        if ($ref->hasProperty($identifierField)) {
-            $prop = $ref->getProperty($identifierField);
-            $prop->setAccessible(true);
-            return $prop->getValue($entity);
+        try {
+            if ($entity instanceof Proxy) {
+                $entity->__load(); // force le chargement de toutes les données
+                $entityClass = get_parent_class($entity);
+            } else {
+                $entityClass = get_class($entity);
+            }
+            $ref = new \ReflectionClass($entityClass);
+            $identifierField = $this->entityManager->getClassMetadata(get_class($entity))->getIdentifier()[0] ?? 'id';
+            if ($ref->hasProperty($identifierField)) {
+                $prop = $ref->getProperty($identifierField);
+                $prop->setAccessible(true);
+                return $prop->getValue($entity);
+            }
+        } catch (\Throwable $th) {
+            throw new \Exception("Failed to get entity ID", 1, $th);
         }
         return null;
     }

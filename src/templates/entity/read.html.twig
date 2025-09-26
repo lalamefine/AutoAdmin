@@ -5,10 +5,10 @@
             'App\\Entity\\':'',
             })|raw }}</span>
     </a>
-    <button 
-        class="hover:text-blue-800 hover:border-blue-300 hover:cursor-pointer border border-transparent bg-blue-100 mb-1 px-1 rounded-xl"
-        hx-get="{{ path('autoadmin_entity_update', {'fqcn': fqcn|url_encode, 'id': id}) }}" 
-        hx-push-url="true" hx-target="#content">Edit</button>
+    <a class="hover:text-blue-800 hover:border-blue-300 hover:cursor-pointer border border-transparent bg-blue-100 mb-1 px-1 rounded-xl"
+       href="{{ path('autoadmin_entity_update', {'fqcn': fqcn|url_encode, 'id': id}) }}"
+       hx-get="{{ path('autoadmin_entity_update', {'fqcn': fqcn|url_encode, 'id': id}) }}" 
+       hx-push-url="true" hx-target="#content">Edit</a>
 </h1>
 <div class="entity-display m-4 p-4 border border-gray-300 rounded bg-white">
     <table class="mb-4 min-w-1/2">

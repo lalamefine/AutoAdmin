@@ -117,10 +117,11 @@ class EntityCRUDController extends AutoAdminAbstractController
     // }
 
     #[Route('/entity/u/{fqcn}/{id}', name: 'autoadmin_entity_update', requirements: ['fqcn' => '.+'])]
-    public function update(string $fqcn, mixed $id, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter, Request $request): Response
+    public function update(string $fqcn, mixed $id, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter, Request $request, array $rejections = []): Response
     {
         $fqcn = urldecode($fqcn);
         $classMetadata = $this->em->getClassMetadata($fqcn);
+        // Handle form submission
         if($request->isMethod('POST')){
             $data = $request->request->all();
             if ($id == 'new') {
@@ -159,14 +160,18 @@ class EntityCRUDController extends AutoAdminAbstractController
                     unset($data['add']);
                 }
             }
-            $entityManipulator->updateEntityFromArray($originEntity, $data);
             $this->em->flush();
+            $rejections = $entityManipulator->updateEntityFromArray($originEntity, $data);
+            if(count($rejections) > 0){
+                $fakeRequest = new Request();
+                return $this->update($fqcn, $id, $entityManipulator, $entityPrinter, $fakeRequest, $rejections);
+            }
             if($id == 'new'){
                 $id = $entityManipulator->getEntityId($originEntity);
             }
             return $this->redirectToRoute('autoadmin_entity_view', ['fqcn' => $fqcn, 'id' => $id]);
         }
-        
+        // Get entity data as array
         if ($id == 'new') {
             $entityArray = array_fill_keys($classMetadata->getFieldNames(), null);
             foreach(array_filter($classMetadata->getAssociationMappings(), fn($mapping) => $mapping->isToOneOwningSide()) as $field => $_){
@@ -175,11 +180,19 @@ class EntityCRUDController extends AutoAdminAbstractController
         }else{
             $entityArray = $entityManipulator->getEntityArray($fqcn, $id);
         }
+        // Update entity array with rejected values
+        foreach($rejections as $field => $rejection){
+            if(array_key_exists($field, $entityArray)){
+                $entityArray[$field] = $rejection['value'];
+            }
+        }
+
         return $this->render('entity/edit.html.twig', [
             'fqcn' => $fqcn,
             'entity' => $entityPrinter->printableEntityEditArray($entityArray, $fqcn),
             'id' => $id,
-            'identifier' => $classMetadata->getIdentifier()[0]
+            'identifier' => $classMetadata->getIdentifier()[0],
+            'rejections' => array_map(fn($r) => $r['reason'], $rejections)
         ]);
     }
 
