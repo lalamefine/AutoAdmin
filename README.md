@@ -26,7 +26,18 @@ Installation
     You need to configure security at routing level <br>
     I do recommand restricting `/autoadmin` (or your custom prefix) to a specific user role in `config/packages/security.yaml`.
 
+Screenshots
+================
+From an improved version of the symfony sample project : https://github.com/symfony/demo
+### List
+![List](./docs/screen-list.png)
+### View
+![View](./docs/screen-view.png)
+### Edition after comments's "Edit" button is clicked (and 2 elements flagged for removal)
+![Edition](./docs/screen-edit.png)
+
 License
 ================
 This bundle is distributed under the LGPL-3.0-or-later license.
+Basically, you can use and integrate the licensed software in proprietary projects, as long as modifications to the LGPL-covered code itself remain open-source and shared.
 See the LICENSE file for more details.
