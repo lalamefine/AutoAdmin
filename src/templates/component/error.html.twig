@@ -1,13 +1,15 @@
-<div class="error-display bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-    <p class="font-bold text-lg">{{ error.message }}</p>
-    <details class="mt-2">
-        <summary class="cursor-pointer text-sm hover:text-red-600 text-red-800">Afficher les détails</summary>
-        <div class="mt-2 p-2 bg-red-50 border rounded text-sm">
-            <strong>Type d'erreur :</strong> {{ error.class }}<br>
-            <strong>Fichier :</strong> {{ error.file }}<br>
-            <strong>Ligne :</strong> {{ error.line }}<br>
-            <strong>Trace :</strong><br>
-            <pre class="whitespace-pre-wrap text-xs">{{ error.traceAsString }}</pre>
-        </div>
-    </details>
+<div id="error-component" hx-swap-oob="true">
+    <div class="error-display bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
+        <p class="font-bold text-lg">{{ error.message }}</p>
+        <details class="mt-2">
+            <summary class="cursor-pointer text-sm hover:text-red-600 text-red-800">Afficher les détails</summary>
+            <div class="mt-2 p-2 bg-red-50 border rounded text-sm">
+                <strong>Type d'erreur :</strong> {{ error.class }}<br>
+                <strong>Fichier :</strong> {{ error.file }}<br>
+                <strong>Ligne :</strong> {{ error.line }}<br>
+                <strong>Trace :</strong><br>
+                <pre class="whitespace-pre-wrap text-xs">{{ error.traceAsString }}</pre>
+            </div>
+        </details>
+    </div>
 </div>

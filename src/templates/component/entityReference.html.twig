@@ -3,5 +3,5 @@
         hx-get="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': id}) }}"
         href="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': id}) }}"
         hx-push-url="true"
-        hx-target="#content" hx-swap="innerHTML">{{ label|replace({'App\\Entity\\':'', 'App\\':''})|raw }}</a>
+        hx-swap="none">{{ label|replace({'App\\Entity\\':'', 'App\\':''})|raw }}</a>
 </div>

@@ -12,7 +12,7 @@
         hx-post="{{ path(modeEdition ? 'autoadmin_collection_update' : 'autoadmin_collection_view', {'fqcn': fqcn, 'id': sourceId, 'field': field}) }}"
         hx-target="#content" hx-swap="beforeend" hx-push-url="false"
         hx-include=".subform-{{ field }}">
-        {{modeEdition ? 'Edit' : 'Show'}}
+        {{modeEdition ? '✏️' : '🔍'}}
     </button>
     {% if modeEdition %}
         <div id="collection-edit-{{ field }}" class="flex flex-col"></div>

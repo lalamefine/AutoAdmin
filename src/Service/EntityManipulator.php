@@ -67,48 +67,59 @@ class EntityManipulator
     }
 
 
-    public function updateEntityFromArray(object $entity, array $data) : array{
-        $this->entityManager->flush();
+    public function updateEntityFromArray(object $entity, array $data) {
         $metadata = $this->entityManager->getClassMetadata(get_class($entity));
         if(!$metadata) {
             throw new \InvalidArgumentException("Invalid entity class");
         }
-        if(isset($data[$metadata->getIdentifier()[0] ?? 'id'])){
-            $repo = $this->entityManager->getRepository(get_class($entity));
-            $existingEntity = $repo->find($data[$metadata->getIdentifier()[0] ?? 'id']);
-            if($existingEntity){ // Do not allow ID updates on an existing entity
+        $suposedId = $data[$metadata->getIdentifier()[0]] ?? null;
+        if($suposedId === ''){
+            $suposedId = null;
+        }
+        if(isset($data[$metadata->getIdentifier()[0]])){
+            if($suposedId !== null){
+                $existingEntity = $this->entityManager->getRepository(get_class($entity))->find($suposedId);
+            } else{
+                $existingEntity = null;
+            }
+            if($existingEntity || $suposedId === null){ // Do not allow ID updates on an existing entity
                 unset($data[$metadata->getIdentifier()[0] ?? 'id']);
             }
         }
         $this->entityManager->persist($entity);
         $rejections = [];
-        foreach ($data as $field => $value) {
-            try {
+        try {
+            foreach ($data as $field => $value) {
                 if ($metadata->hasField($field)) {
                     if(in_array($metadata->getFieldMapping($field)['type'], ['simple_array', 'json', 'array']) && is_string($value)){
                         $value = json_decode($value, true);
                     }
                     $metadata->setFieldValue($entity, $field, $value);
-                } else if ($metadata->hasAssociation($field) && in_array($metadata->getAssociationMapping($field)['type'], [ClassMetadata::ONE_TO_ONE, ClassMetadata::MANY_TO_ONE]) && isset($metadata->getAssociationMapping($field)['isOwningSide']) && $metadata->getAssociationMapping($field)['isOwningSide']) {
-                    if($value === null){
-                        $metadata->setFieldValue($entity, $field, null);
-                    }else{
-                        $targetEntityFqcn = $metadata->getAssociationMapping($field)['targetEntity'];
-                        $targetEntity = $this->entityManager->getRepository($targetEntityFqcn)->find($value);
-                        $metadata->setFieldValue($entity, $field, $targetEntity);
-                    }
+                } else 
+                    if ($metadata->hasAssociation($field) && in_array($metadata->getAssociationMapping($field)['type'], [
+                        ClassMetadata::ONE_TO_ONE, ClassMetadata::MANY_TO_ONE
+                        ]) && isset($metadata->getAssociationMapping($field)['isOwningSide']) && $metadata->getAssociationMapping($field)['isOwningSide']) {
+                            if($value === null){
+                                $metadata->setFieldValue($entity, $field, null);
+                            }else{
+                                $targetEntityFqcn = $metadata->getAssociationMapping($field)['targetEntity'];
+                                $targetEntity = $this->entityManager->getRepository($targetEntityFqcn)->find($value);
+                                $metadata->setFieldValue($entity, $field, $targetEntity);
+                            }
                 }
-                $this->entityManager->flush();
-            } catch (EntityManagerClosed $e) {
-                // Ignore EntityManagerClosed exceptions (flush will close it on first error)
-            } catch (\Throwable $th) {
-                $rejections[$field] = [
-                    'reason' => str_replace('An exception occurred while executing a query: ', '', $th->getMessage()),
-                    'value' => is_object($value) ? '!object' : (is_array($value) ? '!array' : $value)
-                ];
             }
+            $this->entityManager->flush();
+        } catch (EntityManagerClosed $e) {
+            // Ignore EntityManagerClosed exceptions (flush will close it on first error)
+        } catch (\Throwable $th) {
+            dd($th, $field, $data);
+            throw $th;
         }
-        return $rejections;
+        // $rejections[$field] = [
+        //     'reason' => str_replace('An exception occurred while executing a query: ', '', $th->getMessage()),
+        //     'value' => is_object($value) ? '!object' : (is_array($value) ? '!array' : $value)
+        // ];
+        // return $rejections;
     }
     
     public function getEntityId($entity): ?int

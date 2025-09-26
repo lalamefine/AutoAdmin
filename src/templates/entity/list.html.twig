@@ -3,7 +3,7 @@
     <span class="text-sm">( {{ nbItems }} items )</span>
     <button type="button" class="hover:text-blue-800 hover:border-blue-300 hover:cursor-pointer border border-transparent bg-blue-100 mb-1 px-1 rounded-2xl h-7 w-7 text-center"
         hx-get="{{ path('autoadmin_entity_update', {'fqcn': fqcn|url_encode, 'id': 'new'}) }}" 
-        hx-push-url="true" hx-target="#content"><div class="-mt-1">+</div></button>
+        hx-push-url="true" hx-swap="none"><div class="-mt-1">+</div></button>
     {% if app.request.query.all|filter((v, k) => k starts with 'f_' and v is not empty)|length > 0 %}
         <span class="text-sm text-gray-500"> - filtered by 
             {{ app.request.query.all
@@ -32,7 +32,7 @@
     <form id="filterForm" 
         hx-get="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode}) }}"
         hx-trigger="change from:input"
-        hx-target="#content" hx-swap="innerHTML" hx-push-url="true">
+        hx-swap="none" hx-push-url="true">
     <table class="table-auto m-4 ">
         <thead>
             <tr class="bg-gray-200">
@@ -70,8 +70,7 @@
         <button type="button" 
             class="text-blue-800 hover:bg-gray-200 px-2 py-1 rounded {% if currentPage == 1 %}opacity-50 cursor-not-allowed{% else %}hover:cursor-pointer{% endif %}"
             {% if currentPage > 1 %}
-            hx-target="#content" 
-            hx-swap="innerHTML"
+            hx-swap="none"
             hx-push-url="true"
             hx-get="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode, 'page': currentPage - 1}) }}&{{ filters|raw }}"
             {% endif %}
@@ -82,8 +81,7 @@
         {# Première page #}
         {% if currentPage > 3 %}
             <button type="button" class="text-blue-800 hover:bg-gray-200 hover:cursor-pointer px-2 py-1 rounded"
-                hx-target="#content" 
-                hx-swap="innerHTML"
+                hx-swap="none"
                 hx-push-url="true"
                 hx-get="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode, 'page': 1}) }}&{{ filters|raw }}">
                 1
@@ -97,8 +95,7 @@
         {% for page in max(1, currentPage - 2)..min(totalPages, currentPage + 2) %}
             <button type="button" 
                 class="text-blue-800 hover:bg-gray-200 hover:cursor-pointer px-2 py-1 rounded {% if page == currentPage %}font-bold bg-blue-100{% endif %}" 
-                hx-target="#content" 
-                hx-swap="innerHTML"
+                hx-swap="none"
                 hx-push-url="true"
                 hx-get="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode, 'page': page}) }}&{{ filters|raw }}"
                 >
@@ -112,8 +109,7 @@
                 <span class="px-1">...</span>
             {% endif %}
             <button type="button" class="text-blue-800 hover:bg-gray-200 hover:cursor-pointer px-2 py-1 rounded"
-                hx-target="#content" 
-                hx-swap="innerHTML"
+                hx-swap="none"
                 hx-push-url="true"
                 hx-get="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode, 'page': totalPages}) }}&{{ filters|raw }}">
                 {{ totalPages }}
@@ -124,8 +120,7 @@
         <button type="button" 
             class="text-blue-800 hover:bg-gray-200 px-2 py-1 rounded {% if currentPage == totalPages %}opacity-50 cursor-not-allowed{% else %}hover:cursor-pointer{% endif %}"
             {% if currentPage < totalPages %}
-            hx-target="#content" 
-            hx-swap="innerHTML"
+            hx-swap="none"
             hx-push-url="true"
             hx-get="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode, 'page': currentPage + 1}) }}&{{ filters|raw }}"
             {% endif %}
@@ -138,8 +133,7 @@
             Items/page: 
             <select 
                 class="border rounded px-1 text-sm"
-                hx-target="#content" 
-                hx-swap="innerHTML"
+                hx-swap="none"
                 hx-push-url="true"
                 name="per_page"
                 hx-get="{{ path('autoadmin_entity_list', {'fqcn': fqcn|url_encode, 'page': 1}) }}&{{ filters|raw }}">

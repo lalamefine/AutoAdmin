@@ -3,8 +3,7 @@
     {% if subitems is not iterable %}
         <li>
             <a class="text-blue-800 hover:underline" 
-                hx-target="#content" 
-                hx-swap="innerHTML"
+                hx-swap="none"
                 hx-push-url="true"
                 href="{{ path('autoadmin_entity_list', {'fqcn': subitems|url_encode}) }}"
                 hx-get="{{ path('autoadmin_entity_list', {'fqcn': subitems|url_encode}) }}">

@@ -9,11 +9,9 @@
     <button type="button"
         class="hover:text-blue-800 hover:border-blue-300 py-3 px-5 text-xl hover:cursor-pointer border border-transparent bg-blue-100 rounded-2xl"
         hx-get="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': id}) }}"
-        hx-push-url="true"
-        hx-target="#content" hx-swap="innerHTML">Cancel</button>
+        hx-push-url="true" hx-swap="none">🗙 Cancel</button>
     <button type="button" 
         class="hover:text-red-800 hover:border-red-300 py-3 px-5 text-xl hover:cursor-pointer border border-transparent bg-red-100 rounded-2xl"
         hx-post="{{ path('autoadmin_entity_delete', {'fqcn': fqcn|url_encode, 'id': id}) }}"
-        hx-push-url="true"
-        hx-target="#content" hx-swap="innerHTML">Delete</button>
+        hx-push-url="true" hx-swap="none">🗑️ Delete</button>
 </div>

@@ -1,5 +1,6 @@
 <?php namespace Lalamefine\Autoadmin\Controller;
 
+use Doctrine\ORM\Mapping\ClassMetadata;
 use Doctrine\ORM\Query;
 use Doctrine\ORM\Tools\Pagination\Paginator;
 use Lalamefine\Autoadmin\Controller\AutoAdminAbstractController;
@@ -26,7 +27,11 @@ class EntityCRUDController extends AutoAdminAbstractController
                 'content' => parent::renderView($view, $parameters)
             ], $response);
         }
-        return parent::render($view, $parameters, $response);
+        return new Response(
+            '<div id="content" hx-swap-oob="true">'.
+            parent::renderView($view, $parameters) 
+            .'</div>'
+        , $response?->getStatusCode() ?? 200, $response?->headers->all() ?? []);
     }
 
     #[Route('/entities/l/{fqcn}', name: 'autoadmin_entity_list', requirements: ['fqcn' => '.+'])]
@@ -37,7 +42,7 @@ class EntityCRUDController extends AutoAdminAbstractController
         $classMetadata = $entityManipulator->getClassMetadata($fqcn);
         $qb = $this->em->createQueryBuilder()->addSelect("e")->from($fqcn, "e");
         $i = 0;
-        $mappings = array_filter($classMetadata->getAssociationMappings(), fn($mapping) => !in_array($mapping['type'], [\Doctrine\ORM\Mapping\ClassMetadata::ONE_TO_MANY, \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_MANY]));
+        $mappings = array_filter($classMetadata->getAssociationMappings(), fn($mapping) => !in_array($mapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY]));
         foreach($mappings as $field => $mapping){
             $letters = substr($field, 0, 3);
             $qb->leftJoin("e.{$field}", "{$letters}_{$i}");
@@ -99,8 +104,6 @@ class EntityCRUDController extends AutoAdminAbstractController
         if (!$entity) {
             throw $this->createNotFoundException();
         }
-        // dd(array_map(fn($mapping) => $this->em->getClassMetadata($mapping['targetEntity'])->getAssociationMappings()[$mapping['mappedBy']]['fieldName'] ?? null,
-        //     array_filter($classMetadata->getAssociationMappings(), fn($mapping) => $mapping->isToMany())));
         return $this->render('entity/read.html.twig', [
             'entity' => $entityPrinter->printableEntityAr($entity, $fqcn, true, self::MAX_STRING_LENGTH_VIEW),
             'id' => $id,
@@ -110,12 +113,12 @@ class EntityCRUDController extends AutoAdminAbstractController
     }
 
     #[Route('/entity/u/{fqcn}/{id}', name: 'autoadmin_entity_update', requirements: ['fqcn' => '.+'])]
-    public function update(string $fqcn, mixed $id, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter, Request $request, array $rejections = []): Response
+    public function update(string $fqcn, mixed $id, EntityManipulator $entityManipulator, EntityPrinter $entityPrinter, Request $request, array $inheritedRejections = []): Response
     {
         $fqcn = urldecode($fqcn);
         $classMetadata = $this->em->getClassMetadata($fqcn);
         // Handle form submission
-        if($request->isMethod('POST')){
+        if($request->isMethod('POST') && count($inheritedRejections) === 0){
             $data = $request->request->all();
             if ($id == 'new') {
                 $originEntity = (new ReflectionClass($fqcn))->newInstanceWithoutConstructor();
@@ -154,12 +157,8 @@ class EntityCRUDController extends AutoAdminAbstractController
                     unset($data['add']);
                 }
             }
-            $this->em->flush();
             // Update entity from form data
-            $rejections = $entityManipulator->updateEntityFromArray($originEntity, $data);
-            if(count($rejections) > 0){
-                return $this->update($fqcn, $id, $entityManipulator, $entityPrinter, new Request(), $rejections);
-            }
+            $entityManipulator->updateEntityFromArray($originEntity, $data); // $this->em->flush(); is called inside
             if($id == 'new'){
                 $id = $entityManipulator->getEntityId($originEntity);
             }
@@ -170,8 +169,8 @@ class EntityCRUDController extends AutoAdminAbstractController
             $entityArray = array_fill_keys($classMetadata->getFieldNames(), null);
             $filteredAssociations = array_filter($classMetadata->getAssociationMappings(), 
                 fn($mapping) => in_array($mapping['type'], [
-                        \Doctrine\ORM\Mapping\ClassMetadata::ONE_TO_ONE, 
-                        \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_ONE
+                        ClassMetadata::ONE_TO_ONE, 
+                        ClassMetadata::MANY_TO_ONE
                     ]) && isset($mapping['isOwningSide']) && $mapping['isOwningSide']);
             foreach($filteredAssociations as $field => $_){
                 $entityArray[$field] = null;
@@ -180,10 +179,13 @@ class EntityCRUDController extends AutoAdminAbstractController
             $entityArray = $entityManipulator->getEntityArray($fqcn, $id);
         }
         // Update entity array with rejected values
-        foreach($rejections as $field => $rejection){
-            if(array_key_exists($field, $entityArray)){
-                $entityArray[$field] = $rejection['value'];
-            }
+        // foreach($rejections as $field => $rejection){
+        //     if(array_key_exists($field, $entityArray)){
+        //         $entityArray[$field] = $rejection['value'];
+        //     }
+        // }
+        if(count($inheritedRejections) > 0){
+            dd($inheritedRejections, $entityArray);
         }
 
         return $this->render('entity/edit.html.twig', [
@@ -191,7 +193,7 @@ class EntityCRUDController extends AutoAdminAbstractController
             'entity' => $entityPrinter->printableEntityEditArray($entityArray, $fqcn),
             'id' => $id,
             'identifier' => $classMetadata->getIdentifier()[0],
-            'rejections' => array_map(fn($r) => $r['reason'], $rejections)
+            'rejections' => array_map(fn($r) => $r['reason'], $inheritedRejections)
         ]);
     }
 
