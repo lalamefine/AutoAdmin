@@ -15,6 +15,14 @@
             <div class="p-5 overflow-auto grow" id="content">
                 {% if content is defined %}
                     {{ content|raw }}
+                {% else %}
+                <div class="m-14">
+                    <h1 class="text-3xl underline mb-4">Welcome to AutoAdmin</h1>
+                    <div class="flex items-center flex-row gap-2">
+                        <div class="text-7xl text-blue-700">←</div> 
+                        <div class="mt-4">Select an entity from the left menu to get started.</div>
+                    </div>
+                </div>
                 {% endif %}
             </div>  
         </div>
