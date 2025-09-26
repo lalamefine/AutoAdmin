@@ -42,10 +42,10 @@ class EntityPrinter
             throw new \Exception("Entity $fqcn needs to have exactly one identifier field, current: ".implode(', ', $classMetadata->getIdentifier()).".");
         }
         $idField = $classMetadata->getIdentifier()[0];
-        $entityId = $entityRow[$idField];
-        if (!$entityId) {
-            throw new \Exception("Entity id field $idField is missing or null in entity row for $fqcn.");
+        if (!isset($entityRow[$idField]) || $entityRow[$idField] === null) {
+            throw new \Exception("Entity id field '$idField' is missing or null in entity row for $fqcn.");
         }
+        $entityId = $entityRow[$idField];
         foreach ($classMetadata->getFieldNames() as $field) {
             if(array_key_exists($field, $entityRow)){
                 $printable[$field] = $this->printValue($entityRow[$field], $field, $fqcn, $maxLength);
