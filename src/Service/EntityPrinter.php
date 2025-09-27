@@ -13,8 +13,11 @@ class EntityPrinter
 {
     private Environment $twig;
 
-    public function __construct(private EntityManagerInterface $em, private LalamefineAutoadminBundle $bundle, private RouterInterface $router)
-    {
+    public function __construct(
+        private EntityManagerInterface $em, private LalamefineAutoadminBundle $bundle, 
+        private RouterInterface $router, private EntityIdentifier $entityIdentifier,
+        private AssociationManager $associationManager
+    ) {
         $loader = new FilesystemLoader($bundle->getPath().'/src/templates/');
         $this->twig = new Environment($loader);
         $this->twig->addFunction(new \Twig\TwigFunction('path', function ($route, $params = []) {
@@ -55,7 +58,7 @@ class EntityPrinter
         }
         foreach ($classMetadata->getAssociationMappings() as $field => $associationMapping) {
             $value = $entityRow[$field] ?? null;
-            if(in_array($associationMapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY]) && $allowCollections){
+            if($allowCollections && $this->associationManager->isMappingToMany($associationMapping)){
                 $printable[$field] = $this->printCollectionLoader($entityId, $field, $fqcn, false);
             }else{
                 $printable[$field] = $this->printValue($value, $field, $fqcn, $maxLength);
@@ -119,16 +122,13 @@ class EntityPrinter
     public function printableEntityEditArray(array $entity, string $fqcn): array
     {
         $printable = [];
-        $this->em->getClassMetadata($fqcn);
-        $entityField = $this->em->getClassMetadata($fqcn)->getIdentifier()[0] ?? 'id';
-        $entityId = $entity[$entityField] ?? null;
-        $champsClassiques = $this->em->getClassMetadata($fqcn)->getFieldNames();
-        foreach ($champsClassiques as $field) {
+        $metadata = $this->em->getClassMetadata($fqcn);
+        $entityId = $this->entityIdentifier->getEntityId($entity) ?? null;
+        foreach ($metadata->getFieldNames() as $field) {
             $printable[$field] = $this->printValueEditInput($entity[$field] ?? null, $field, $fqcn);
         }
-        $champsAssociations = $this->em->getClassMetadata($fqcn)->getAssociationMappings();
-        foreach ($champsAssociations as $field => $mapping) {
-            if (in_array($mapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY])) {
+        foreach ($metadata->getAssociationMappings() as $field => $mapping) {
+            if ($this->associationManager->isMappingToMany($mapping)) {
                 if (!$entityId) {
                     $printable[$field] = "<i class=\"text-gray-500\">(save entity to manage collection)</i>";
                     continue;
@@ -207,25 +207,25 @@ class EntityPrinter
 
     public function printCollectionLoader($sourceId, $field, $fqcn, $modeEdition = false): string
     {
+        // Checks
         $classMetadata = $this->em->getClassMetadata($fqcn);
-        $associations = array_keys($classMetadata->getAssociationMappings());
-        if (!in_array($field, $associations)) {
+        if (!isset($classMetadata->getAssociationMappings()[$field])) {
             return "Not an association field";
         }
         $mapping = $classMetadata->getAssociationMapping($field);
-        $associationFqcn = $mapping['targetEntity'];
-        if ($modeEdition && !in_array($mapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY])) {
+        if ($modeEdition && $this->associationManager->isMappingToOne($mapping)) {
             return "Not a to-many association";
         }
+        // Count elements
         $elementsCount = 0;
         if ($mapping['type'] == ClassMetadata::MANY_TO_MANY) {
-            // ManyToMany owning side
             $entity = $this->em->find($fqcn, $sourceId);
             $elementsCount = $classMetadata->getFieldValue($entity, $field)->count() ?? 0;
-        } else if( $mapping['type'] == ClassMetadata::ONE_TO_MANY && isset($mapping['mappedBy'])) {
-            // OneToMany or ManyToMany inverse side
-            $elementsCount = $this->em->getRepository($associationFqcn)->count([$mapping['mappedBy'] ?? $mapping['inversedBy'] => $sourceId]);
+        } else 
+        if( $mapping['type'] == ClassMetadata::ONE_TO_MANY && isset($mapping['mappedBy'])) {
+            $elementsCount = $this->em->getRepository($mapping['targetEntity'])->count([$mapping['mappedBy'] ?? $mapping['inversedBy'] => $sourceId]);
         }
+        // Render
         return $this->twig->render('component/collectionLoader.html.twig', [
             'sourceId' => $sourceId,
             'type' => match($mapping['type'] ?? null) {
@@ -242,39 +242,10 @@ class EntityPrinter
         ]);
     }
 
-    
-    public function arrayToIdLabelMap($arrayOrCollection, $identifierField = 'id'): array
-    {
-        $collection = is_array($arrayOrCollection) ? $arrayOrCollection : $arrayOrCollection->toArray();
-        return array_map(function($e) use ($identifierField) {
-            $id = null; $name = '';
-            $ref = new \ReflectionObject($e);
-            if ($ref->hasProperty($identifierField)) {
-                $prop = $ref->getProperty($identifierField);
-                $prop->setAccessible(true);
-                $id = $prop->getValue($e);
-            }
-            if(method_exists($e, '__toString')){
-                $name = $ref->getShortName(). '#' . $id . $this->inColoredDiv((string)$e);
-            } else if(method_exists($e, 'getName')){
-                $name = $ref->getShortName(). '#' . $id . $this->inColoredDiv($e->getName());
-            } else if(method_exists($e, 'getTitle')){
-                $name = $ref->getShortName(). '#' . $id . $this->inColoredDiv($e->getTitle());
-            } else {
-                $name = $ref->getShortName(). '#' . $id;
-            }
-            return [
-                'id' => $id,
-                'name' => $name
-            ];
-        }, $collection);
-    } 
-
     public function printAssociationEditInput($fieldValue, $field, $fqcn): string
     {
         $classMetadata = $this->em->getClassMetadata($fqcn);
-        $associations = array_keys($classMetadata->getAssociationMappings());
-        if (!in_array($field, $associations)) {
+        if (!isset($classMetadata->getAssociationMappings()[$field])) {
             return "Not an association field";
         }
         $mapping = $classMetadata->getAssociationMapping($field);
@@ -303,65 +274,13 @@ class EntityPrinter
         }
     }
 
-
     function inColoredDiv($text) {
         return "<div class=\"rounded-xl bg-blue-100 ms-1 px-1\">$text</div>";
     }
 
-    public function makeEntityIdentifierFromClassAndId(string $fqcn, mixed $id): string
-    {
-        $classMetadata = $this->em->getClassMetadata($fqcn);
-        $identification = $classMetadata->getIdentifier()[0] ?? null;
-        if (!$identification) {
-            return $classMetadata->getName() . '#' . $id . ' (no identifier)';
-        }
-        $e = $this->em->getRepository($fqcn)->find($id);
-        if (!$e && $id !== null) {
-            return $classMetadata->getName() . '#' . $id . ' (not found)';
-        }
-        if ($e) {
-            try {
-                $ref = new \ReflectionClass($e);
-                $prop = $ref->getProperty($identification);
-                $prop->setAccessible(true);
-                $idValue = $prop->getValue($e);
-            } catch (\Throwable $th) {
-                $idValue = null;
-            }
-
-            if(is_object($idValue)){
-                if (method_exists($idValue, '__toString')) {
-                    return $ref->getShortName() . $this->inColoredDiv($identification.'->'.$idValue->__toString());
-                } else {
-                    return $ref->getShortName() . $this->inColoredDiv($identification.'->'.get_class($idValue));
-                }
-            } else {
-                if ($e instanceof \Stringable || method_exists($e, '__toString')) {
-                    return $ref->getShortName() . '#' . $id . $this->inColoredDiv( $e->__toString() );
-                } else if (method_exists($e, 'getName')) {
-                    return $ref->getShortName() . '#' . $id . $this->inColoredDiv( $e->getName() );
-                } else if (method_exists($e, 'getTitle')) {
-                    return $ref->getShortName() . '#' . $id . $this->inColoredDiv( $e->getTitle() );
-                } 
-                return $ref->getShortName() . '#' . $id;
-            } 
-            return $ref->getShortName() . '#?';
-        }else{
-            $ref = new \ReflectionClass($fqcn);
-        }
-        return $ref->getShortName() . '#' . $id;
-    }
-
-    public function makeEntityIdentifierFromClassAndContent(string $fqcn, array $content): string
-    {
-        $classMetadata = $this->em->getClassMetadata($fqcn);
-        $identification = $classMetadata->getIdentifierColumnNames()[0];
-        return $this->makeEntityIdentifierFromClassAndId($fqcn, $content[$identification]);
-    }
-
     public function linkToEntity(string $fqcn, mixed $id, ?string $label = null): string
     {
-        $label = $label ?? $this->makeEntityIdentifierFromClassAndId($fqcn, $id);
+        $label = $label ?? $this->entityIdentifier->makeTextIdentifierFromClassAndId($fqcn, $id);
         return $this->twig->render('component/entityReference.html.twig', [
             'fqcn' => $fqcn,
             'id' => $id,

@@ -3,7 +3,7 @@
     "type": "symfony-bundle",
     "keywords": ["symfony", "admin", "crud", "automatic"],
     "license": "LGPL-3.0-or-later",
-    "description": "Generate Admin pages automatically with no need for configuration (all access granted)",
+    "description": "Generate Symfony Admin pages automatically from your Doctrine entities",
     "autoload": {
         "psr-4": {
             "Lalamefine\\Autoadmin\\": "src/"

@@ -11,7 +11,7 @@ use Doctrine\Persistence\Proxy;
 
 class EntityManipulator
 {
-    public function __construct(private EntityManagerInterface $entityManager, private ManagerRegistry $doctrine)
+    public function __construct(private EntityManagerInterface $entityManager, private ManagerRegistry $doctrine, private AssociationManager $associationManager)
     {
     }
 
@@ -31,7 +31,7 @@ class EntityManipulator
         }
 
         if (
-            in_array($mapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY])
+            $this->associationManager->isFieldToMany(get_class($originEntity), $field)
         ) {
             return $classMetadata->getFieldValue($originEntity, $field);
         } else {
@@ -39,19 +39,21 @@ class EntityManipulator
         }
     }
 
-
     public function getEntityArray($fqcn, $id, $fetchCollections = true): ?array
     {
-        $identifierField = $this->entityManager->getClassMetadata($fqcn)->getIdentifier()[0] ?? 'id';
+        $classMetadata = $this->entityManager->getClassMetadata($fqcn);
+        $identifierField = $classMetadata->getIdentifier()[0];
+        if(!$identifierField){
+            throw new \InvalidArgumentException("Entity $fqcn has no identifier field");
+        }
         $qb = $this->entityManager->createQueryBuilder()
             ->select('e')
             ->from($fqcn, 'e')
             ->where("e.$identifierField = :id")
             ->setParameter('id', $id);
 
-        $classMetadata = $this->entityManager->getClassMetadata($fqcn);
         $i = 0;
-        $mappings = array_filter($classMetadata->getAssociationMappings(), fn($mapping) => $fetchCollections || !in_array($mapping['type'], [ClassMetadata::ONE_TO_MANY, ClassMetadata::MANY_TO_MANY]));
+        $mappings = $fetchCollections ? $classMetadata->getAssociationMappings() : $this->associationManager->getMappingToOneForClass($fqcn);
         foreach($mappings as $field => $_){
             $letters = substr($field, 0, 3);
             $qb->leftJoin("e.$field", "{$letters}_{$i}");
@@ -65,7 +67,6 @@ class EntityManipulator
     {
         return $this->entityManager->getConfiguration()->getMetadataDriverImpl()->getAllClassNames();
     }
-
 
     public function updateEntityFromArray(object $entity, array $data) {
         $metadata = $this->entityManager->getClassMetadata(get_class($entity));
@@ -87,7 +88,6 @@ class EntityManipulator
             }
         }
         $this->entityManager->persist($entity);
-        $rejections = [];
         try {
             foreach ($data as $field => $value) {
                 if ($metadata->hasField($field)) {
@@ -112,36 +112,8 @@ class EntityManipulator
         } catch (EntityManagerClosed $e) {
             // Ignore EntityManagerClosed exceptions (flush will close it on first error)
         } catch (\Throwable $th) {
-            dd($th, $field, $data);
             throw $th;
         }
-        // $rejections[$field] = [
-        //     'reason' => str_replace('An exception occurred while executing a query: ', '', $th->getMessage()),
-        //     'value' => is_object($value) ? '!object' : (is_array($value) ? '!array' : $value)
-        // ];
-        // return $rejections;
-    }
-    
-    public function getEntityId($entity): ?int
-    {
-        try {
-            if ($entity instanceof Proxy) {
-                $entityClass = get_parent_class($entity);
-                $entity->__load(); // force loading if it's a proxy
-            } else {
-                $entityClass = get_class($entity);
-            }
-            $ref = new \ReflectionClass($entityClass);
-            $identifierField = $this->entityManager->getClassMetadata(get_class($entity))->getIdentifier()[0] ?? 'id';
-            if ($ref->hasProperty($identifierField)) {
-                $prop = $ref->getProperty($identifierField);
-                $prop->setAccessible(true);
-                return $prop->getValue($entity);
-            }
-        } catch (\Throwable $th) {
-            throw new \Exception("Failed to get entity ID", 1, $th);
-        }
-        return null;
     }
 
 }
