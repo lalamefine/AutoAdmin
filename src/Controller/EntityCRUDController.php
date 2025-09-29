@@ -76,7 +76,7 @@ class EntityCRUDController extends AutoAdminAbstractController
         $paginator = new Paginator($qb);
         $paginator->getQuery()
             ->setFirstResult($perPage * ($page - 1)) // Offset
-            ->setMaxResults($perPage)->setHydrationMode(Query::HYDRATE_ARRAY); // Limit
+            ->setMaxResults($perPage); // Limit
         $results = [...$paginator->getIterator()];
 
         $headers = array_merge($classMetadata->getFieldNames(), array_keys($mappings));
@@ -92,8 +92,8 @@ class EntityCRUDController extends AutoAdminAbstractController
             'currentPage' => $page,
             'totalPages' => ceil(count($paginator) / $perPage),
             'perPage' => $perPage,
-            'items' => array_map(function($item) use ($entityPrinter, $fqcn, $headers) {
-                return $entityPrinter->printEntityRow($item, $fqcn, $headers, self::MAX_STRING_LENGTH_TABLE);
+            'items' => array_map(function($item) use ($entityPrinter, $headers) {
+                return $entityPrinter->printEntityRow($item, $headers, self::MAX_STRING_LENGTH_TABLE);
             }, $results)
         ]);
     }
@@ -103,12 +103,12 @@ class EntityCRUDController extends AutoAdminAbstractController
     {
         $fqcn = urldecode($fqcn);
         $classMetadata = $this->em->getClassMetadata($fqcn);
-        $entity = $entityManipulator->getEntityArray($fqcn, $id, true);
+        $entity = $entityManipulator->getEntity($fqcn, $id, true);
         if (!$entity) {
             throw $this->createNotFoundException();
         }
         return $this->render('entity/read.html.twig', [
-            'entity' => $entityPrinter->printableEntityAr($entity, $fqcn, true, self::MAX_STRING_LENGTH_VIEW),
+            'entity' => $entityPrinter->printableEntityAr($entity, $fqcn, self::MAX_STRING_LENGTH_VIEW),
             'id' => $id,
             'identifier' => $classMetadata->getIdentifier()[0],
             'fqcn' => $fqcn
@@ -176,7 +176,7 @@ class EntityCRUDController extends AutoAdminAbstractController
                 $entityArray[$field] = null;
             }
         }else{
-            $entityArray = $entityManipulator->getEntityArray($fqcn, $id);
+            $entityArray = $entityManipulator->getEntity($fqcn, $id);
         }
 
         return $this->render('entity/edit.html.twig', [

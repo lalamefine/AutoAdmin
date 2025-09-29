@@ -39,7 +39,7 @@ class EntityManipulator
         }
     }
 
-    public function getEntityArray($fqcn, $id, $fetchCollections = true): ?array
+    public function getEntity($fqcn, $id, $fetchCollections = true): ?object
     {
         $classMetadata = $this->entityManager->getClassMetadata($fqcn);
         $identifierField = $classMetadata->getIdentifier()[0];
@@ -59,8 +59,8 @@ class EntityManipulator
             $qb->leftJoin("e.$field", "{$letters}_{$i}");
             $qb->addSelect("{$letters}_{$i}");
             $i++;
-        }                    
-        return $qb->getQuery()->getArrayResult()[0] ?? null;
+        }
+        return $qb->getQuery()->getOneOrNullResult();
     }
 
     public function listEntities()

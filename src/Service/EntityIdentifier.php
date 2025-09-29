@@ -8,7 +8,6 @@ class EntityIdentifier {
     public function __construct(private EntityManagerInterface $em)
     { }
 
-
     public function makeTextIdentifierFromClassAndId(string $fqcn, mixed $id): string
     {
         $classMetadata = $this->em->getClassMetadata($fqcn);
@@ -16,7 +15,11 @@ class EntityIdentifier {
         if (!$identification) {
             return $classMetadata->getName() . '#' . $id . ' (no identifier)';
         }
-        $e = $this->em->getRepository($fqcn)->find($id);
+        try {
+            $e = $this->em->getRepository($fqcn)->find($id);
+        } catch (\Throwable $th) {
+            throw new \Exception("Failed to find entity $fqcn with id $id", 1, $th);
+        }
         if (!$e && $id !== null) {
             return $classMetadata->getName() . '#' . $id . ' (not found)';
         }
@@ -84,8 +87,7 @@ class EntityIdentifier {
         return "<div class=\"rounded-xl bg-blue-100 ms-1 px-1\">$text</div>";
     }
 
-    
-    public function getEntityId($entity): ?int
+    public function getEntityId(object $entity): mixed
     {
         try {
             if ($entity instanceof Proxy) {

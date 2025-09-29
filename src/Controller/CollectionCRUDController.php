@@ -44,9 +44,10 @@ class CollectionCRUDController extends AutoAdminAbstractController
         }
         $classMetadata = $this->em->getClassMetadata($fqcn);
         $association = $classMetadata->getAssociationMapping($field);
+        $reverseAssociation = $this->em->getClassMetadata($association['targetEntity'])->getAssociationMapping($association['mappedBy'] ?? $association['inversedBy']);
         $fqcnAssociation = $association['targetEntity'];
         $collection = $entityManipulator->getCollection($origin, $field);
-        $reverseIdField = $this->em->getClassMetadata($fqcnAssociation)->getIdentifier()[0] ?? null;
+        $reverseIdField = $this->em->getClassMetadata($fqcnAssociation)->getIdentifier()[0];
         if($request->isMethod('POST')){
             $data = $request->request->all();
             if(isset($data['remove'])){
@@ -67,12 +68,13 @@ class CollectionCRUDController extends AutoAdminAbstractController
                 unset($data['add']);
             }
         }
-
-        if(isset($association['isOwningSide']) && $association['isOwningSide'] && $association['type'] != \Doctrine\ORM\Mapping\ClassMetadata::MANY_TO_MANY){
-            $deletable = $this->em->getClassMetadata($fqcnAssociation)->getAssociationMapping($association['mappedBy'])['joinColumns'][0]['nullable'] ?? false;
-        } else {
-            $deletable = true;
-        }
+        $deletable = match($association['type'] ?? null) { 
+            ClassMetadata::MANY_TO_MANY => $reverseAssociation['joinColumns'][0]['nullable'] ?? false,
+            ClassMetadata::ONE_TO_MANY => $reverseAssociation['joinColumns'][0]['nullable'] ?? false,
+            ClassMetadata::MANY_TO_ONE => $association['joinColumns'][0]['nullable'] ?? false,
+            ClassMetadata::ONE_TO_ONE => $association['isOwningSide'] ? ($association['joinColumns'][0]['nullable'] ?? false) : ($reverseAssociation['joinColumns'][0]['nullable'] ?? false),
+            default => false
+        };
         return $this->render('modals/collection.html.twig', [
             'collection' => $entityIdentifier->arrayToIdLabelMap($collection, $reverseIdField),
             'fqcn' => $fqcnAssociation,

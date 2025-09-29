@@ -3,20 +3,20 @@
     <td class="p-1 border border-gray-200 text-center">
         <div class="flex gap-1 justify-center">
             <a class="hover:text-blue-800 hover:border-blue-300 px-1 hover:cursor-pointer border border-transparent bg-blue-100 px-1 rounded-xl"
-                hx-get="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': entityRow[classMetadata.getIdentifierColumnNames()[0]]}) }}"
-                href="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': entityRow[classMetadata.getIdentifierColumnNames()[0]]}) }}"
+                hx-get="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': entityId }) }}"
+                href="{{ path('autoadmin_entity_view', {'fqcn': fqcn|url_encode, 'id': entityId }) }}"
                 hx-push-url="true"
                 hx-swap="none">🔍</a>
         
             <a class="hover:text-blue-800 hover:border-blue-300 px-1 hover:cursor-pointer border border-transparent bg-blue-100 px-1 rounded-xl"
-                hx-get="{{ path('autoadmin_entity_update', {'fqcn': fqcn|url_encode, 'id': entityRow[classMetadata.getIdentifierColumnNames()[0]]}) }}"
-                href="{{ path('autoadmin_entity_update', {'fqcn': fqcn|url_encode, 'id': entityRow[classMetadata.getIdentifierColumnNames()[0]]}) }}"
+                hx-get="{{ path('autoadmin_entity_update', {'fqcn': fqcn|url_encode, 'id': entityId }) }}"
+                href="{{ path('autoadmin_entity_update', {'fqcn': fqcn|url_encode, 'id': entityId }) }}"
                 hx-push-url="true"
                 hx-swap="none">✏️</a>
         
             <a class="hover:text-red-800 hover:border-red-300 px-1 hover:cursor-pointer border border-transparent bg-red-100 px-1 rounded-xl"
-                hx-get="{{ path('autoadmin_entity_delete', {'fqcn': fqcn|url_encode, 'id': entityRow[classMetadata.getIdentifierColumnNames()[0]]}) }}"
-                href="{{ path('autoadmin_entity_delete', {'fqcn': fqcn|url_encode, 'id': entityRow[classMetadata.getIdentifierColumnNames()[0]]}) }}"
+                hx-get="{{ path('autoadmin_entity_delete', {'fqcn': fqcn|url_encode, 'id': entityId }) }}"
+                href="{{ path('autoadmin_entity_delete', {'fqcn': fqcn|url_encode, 'id': entityId }) }}"
                 hx-push-url="true"
                 hx-swap="none">🗑️</a>
         </div>

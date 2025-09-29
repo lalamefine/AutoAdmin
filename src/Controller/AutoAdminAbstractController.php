@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
 use Twig\Loader\FilesystemLoader;
+use Lalamefine\Autoadmin\Service\TwigBundleService;
 
 abstract class AutoAdminAbstractController extends AbstractController
 {
@@ -15,27 +16,12 @@ abstract class AutoAdminAbstractController extends AbstractController
         protected LalamefineAutoadminBundle $bundle,
         protected EntityManagerInterface $em,
         protected EntityPrinter $entityPrinter,
+        protected TwigBundleService $twigService,
     ) {}
 
     protected function renderView(string $view, array $parameters = []): string
     {
-        $loader = new FilesystemLoader($this->bundle->getPath().'/src/templates/');
-        $twig = new Environment($loader);
-        $request = $this->container->get('request_stack')->getCurrentRequest();
-        $twig->addGlobal('app', [
-            'request' => $request,
-        ]);
-        $twig->addFunction(new \Twig\TwigFunction('asset', function ($path) {
-            return '/autoadmin/public/'.$path;
-        }));
-        $twig->addFunction(new \Twig\TwigFunction('path', function ($route, $params = []) {
-            $router = $this->container->get('router');
-            return $router->generate($route, $params);
-        }));
-        $twig->addFunction(new \Twig\TwigFunction('dump', function ($var) {
-            return var_dump($var);
-        }));
-        return $twig->render($view, $parameters);
+        return $this->twigService->getEnv()->render($view, $parameters);
     }
 
     public function render(string $view, array $parameters = [], ?Response $response = null): Response

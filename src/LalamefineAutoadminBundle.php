@@ -4,6 +4,8 @@ namespace Lalamefine\Autoadmin;
 use Symfony\Component\DependencyInjection\ContainerBuilder;
 use Symfony\Component\DependencyInjection\Loader\Configurator\ContainerConfigurator;
 use Symfony\Component\HttpKernel\Bundle\AbstractBundle;
+use Twig\Environment;
+use Twig\Loader\FilesystemLoader;
 
 class LalamefineAutoadminBundle extends AbstractBundle
 {
@@ -16,8 +18,5 @@ class LalamefineAutoadminBundle extends AbstractBundle
         }
         // load an XML, PHP or YAML file
         $container->import('../config/services.yaml');
-        
-        
-    }
-    
+    }    
 }
