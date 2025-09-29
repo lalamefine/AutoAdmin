@@ -1,5 +1,5 @@
 controllers:
     resource:
-        path: ../src/Controller/
+        path: '@LalamefineAutoadminBundle/src/Controller/'
         namespace: Lalamefine\Autoadmin\Controller
     type: attribute
