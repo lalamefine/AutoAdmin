@@ -17,7 +17,7 @@ Installation
     ```
 3. Add the route in `config/routes/autoadmin.yaml`:
     ```yaml
-    app_file:
+    autoadmin:
         resource: '@LalamefineAutoadminBundle/config/routes.yaml'
         prefix: autoadmin
     ```

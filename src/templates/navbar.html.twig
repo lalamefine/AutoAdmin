@@ -1,17 +1,23 @@
 <ul>
+{% set maxlen = 30 %}
 {% for item, subitems in items %}
     {% if subitems is not iterable %}
         <li>
             <a class="text-blue-800 hover:underline" 
                 hx-swap="none"
                 hx-push-url="true"
+                {% if item|length > maxlen %}
+                title="{{ item }}"
+                {% endif %}
                 href="{{ path('autoadmin_entity_list', {'fqcn': subitems|url_encode}) }}"
                 hx-get="{{ path('autoadmin_entity_list', {'fqcn': subitems|url_encode}) }}">
-                {{ item }}
+                {{ item|length > maxlen ? item|slice(0, maxlen - 3) ~ '...' : item }}
             </a>
         </li>
     {% else %}
-        <li>📁 {{ item }}</li>
+        <li {% if item|length > maxlen %} title="{{ item }}" {% endif %}>
+            📁 {{ item|length > maxlen ? item|slice(0, maxlen - 3) ~ '...' : item }}
+        </li>
         <div class="ml-3 pl-1 border-l-2 border-gray-300">
             {% include "navbar.html.twig" with {'items': subitems} %}
         </div>
